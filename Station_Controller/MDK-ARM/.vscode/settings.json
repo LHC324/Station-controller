@@ -1,0 +1,30 @@
+{
+    "files.associations": {
+        "adc.h": "c",
+        "cmsis_os.h": "c",
+        "main.h": "c",
+        "mcp4822.h": "c",
+        "spi.h": "c",
+        "io_signal.h": "c",
+        "tool.h": "c",
+        "shell_port.h": "c",
+        "mdrtuslave.h": "c",
+        "mdregpool.h": "c",
+        "mdconfig.h": "c",
+        "mdcrc16.h": "c",
+        "memory": "c",
+        "string": "c",
+        "deque": "c",
+        "vector": "c",
+        "array": "c",
+        "iterator": "c",
+        "string_view": "c",
+        "stdlib.h": "c",
+        "mdtype.h": "c",
+        "gpio.h": "c",
+        "usart.h": "c",
+        "dwin.h": "c",
+        "dac.h": "c",
+        "flash.h": "c"
+    }
+}
