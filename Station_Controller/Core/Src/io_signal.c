@@ -104,8 +104,9 @@ void Read_Analog_Io(void)
 #define CQ 0.375224F
     mdSTATUS ret = mdFALSE;
     uint16_t tch = 0;
+    /*滤波结构需要不断迭代，否则滤波器无法正常工作*/
 #if defined(KALMAN)
-    KFP hkfp = {
+    static KFP hkfp = {
         .Last_Covariance = LASTP,
         .Kg = 0,
         .Now_Covariance = 0,
@@ -114,7 +115,7 @@ void Read_Analog_Io(void)
         .R = COVAR_R,
     };
 #else
-    SideParm side = {
+    static SideParm side = {
         .First_Flag = true,
         .Head = &side.SideBuff[0],
         .SideBuff = {0},
