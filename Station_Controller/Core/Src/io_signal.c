@@ -144,7 +144,7 @@ void Read_Analog_Io(void)
 #if defined(KALMAN)
         memcpy(&pkfp[ch], &hkfp, sizeof(hkfp));
 #else
-        memcpy(&pside[ch], &pside, sizeof(pside));
+        memcpy(&pside[ch], &side, sizeof(pside));
 #endif
     }
 
