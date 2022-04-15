@@ -106,7 +106,7 @@ void Read_Analog_Io(void)
     uint16_t tch = 0;
     /*滤波结构需要不断迭代，否则滤波器无法正常工作*/
 #if defined(KALMAN)
-    static KFP hkfp = {
+    KFP hkfp = {
         .Last_Covariance = LASTP,
         .Kg = 0,
         .Now_Covariance = 0,
@@ -114,27 +114,29 @@ void Read_Analog_Io(void)
         .Q = COVAR_Q,
         .R = COVAR_R,
     };
+    static KFP pkpf[ADC_DMA_CHANNEL];
 #else
-    static SideParm side = {
+    SideParm side = {
         .First_Flag = true,
         .Head = &side.SideBuff[0],
         .SideBuff = {0},
         .Sum = 0,
     };
+    static SideParm pside[ADC_DMA_CHANNEL];
 #endif
 #if defined(USING_FREERTOS)
     float *pdata = (float *)CUSTOM_MALLOC(ADC_DMA_CHANNEL * sizeof(float));
     if (!pdata)
         CUSTOM_FREE(pdata);
-#if defined(KALMAN)
-    KFP *pkfp = (KFP *)CUSTOM_MALLOC(ADC_DMA_CHANNEL * sizeof(KFP));
-    if (!pkfp)
-        CUSTOM_FREE(pkfp);
-#else
-    SideParm *pside = (SideParm *)CUSTOM_MALLOC(ADC_DMA_CHANNEL * sizeof(SideParm));
-    if (!pside)
-        CUSTOM_FREE(pside);
-#endif
+// #if defined(KALMAN)
+//     KFP *pkfp = (KFP *)CUSTOM_MALLOC(ADC_DMA_CHANNEL * sizeof(KFP));
+//     if (!pkfp)
+//         CUSTOM_FREE(pkfp);
+// #else
+//     SideParm *pside = (SideParm *)CUSTOM_MALLOC(ADC_DMA_CHANNEL * sizeof(SideParm));
+//     if (!pside)
+//         CUSTOM_FREE(pside);
+// #endif
 #else
     float pdata[ADC_DMA_CHANNEL];
     KFP pkfp[ADC_DMA_CHANNEL];
@@ -197,11 +199,11 @@ void Read_Analog_Io(void)
     }
 #if defined(USING_FREERTOS)
     CUSTOM_FREE(pdata);
-#if defined(KALMAN)
-    CUSTOM_FREE(pkfp);
-#else
-    CUSTOM_FREE(pside);
-#endif
+// #if defined(KALMAN)
+//     CUSTOM_FREE(pkfp);
+// #else
+//     CUSTOM_FREE(pside);
+// #endif
 #endif
 }
 
