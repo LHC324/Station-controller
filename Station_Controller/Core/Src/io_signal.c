@@ -104,6 +104,7 @@ void Read_Analog_Io(void)
 #define CQ 0.375224F
     mdSTATUS ret = mdFALSE;
     uint16_t tch = 0;
+    static bool first_flag = false;
     /*滤波结构需要不断迭代，否则滤波器无法正常工作*/
 #if defined(KALMAN)
     KFP hkfp = {
@@ -124,6 +125,20 @@ void Read_Analog_Io(void)
     };
     static SideParm pside[ADC_DMA_CHANNEL];
 #endif
+    /*保证仅首次copy*/
+    if (!first_flag)
+    {
+        first_flag = true;
+        for (uint16_t ch = 0; ch < ADC_DMA_CHANNEL; ch++)
+        {
+#if defined(KALMAN)
+            memcpy(&pkfp[ch], &hkfp, sizeof(hkfp));
+#else
+            memcpy(&pside[ch], &side, sizeof(pside));
+#endif
+        }
+    }
+
 #if defined(USING_FREERTOS)
     float *pdata = (float *)CUSTOM_MALLOC(ADC_DMA_CHANNEL * sizeof(float));
     if (!pdata)
@@ -137,19 +152,11 @@ void Read_Analog_Io(void)
 //     if (!pside)
 //         CUSTOM_FREE(pside);
 // #endif
-#else
-    float pdata[ADC_DMA_CHANNEL];
-    KFP pkfp[ADC_DMA_CHANNEL];
+// #else
+//     float pdata[ADC_DMA_CHANNEL];
+//     KFP pkfp[ADC_DMA_CHANNEL];
 #endif
     memset(pdata, 0x00, ADC_DMA_CHANNEL * sizeof(float));
-    for (uint16_t ch = 0; ch < ADC_DMA_CHANNEL; ch++)
-    {
-#if defined(KALMAN)
-        memcpy(&pkfp[ch], &hkfp, sizeof(hkfp));
-#else
-        memcpy(&pside[ch], &side, sizeof(pside));
-#endif
-    }
 
 #if defined(USING_DEBUG)
     // // uint16_t sum;
