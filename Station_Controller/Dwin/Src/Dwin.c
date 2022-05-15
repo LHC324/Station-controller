@@ -10,6 +10,7 @@
 #include "usart.h"
 #include "shell_port.h"
 #include "Flash.h"
+#include "mdrtuslave.h"
 #if defined(USING_FREERTOS)
 #include "cmsis_os.h"
 #endif
@@ -57,6 +58,7 @@ DwinMap Dwin_ObjMap[] = {
 	{.addr = PTANK_LIMIT_ADDR, .upper = 2.0F, .lower = 0, .event = Dwin_EventHandle},
 	{.addr = LTANK_LIMIT_ADDR, .upper = 10.0F, .lower = 0, .event = Dwin_EventHandle},
 	{.addr = PVAP_STOP_ADDR, .upper = 4.0F, .lower = 0, .event = Dwin_EventHandle},
+	{.addr = PSVAP_STOP_ADDR, .upper = 4.0F, .lower = 0, .event = Dwin_EventHandle},
 	{.addr = RESTORE_ADDR, .upper = 0xFFFF, .lower = 0, .event = Restore_Factory},
 	{.addr = USER_NAME_ADDR, .upper = 9999, .lower = 0, .event = Password_Handle},
 	{.addr = USER_PASSWORD_ADDR, .upper = 9999, .lower = 0, .event = Password_Handle},
@@ -104,6 +106,7 @@ static void Create_DwinObject(pDwinHandle *pd, pDwinHandle ps)
 	(*pd)->Dw_Read = Dwin_Read;
 	(*pd)->Dw_Page = Dwin_PageChange;
 	(*pd)->Dw_Poll = Dwin_Poll;
+	(*pd)->Dw_Handle = Dwin_EventHandle;
 	(*pd)->Dw_Error = Dwin_ErrorHandle;
 	(*pd)->Master.pTbuf = pTxbuf;
 	(*pd)->Master.TxCount = 0U;
@@ -352,9 +355,11 @@ static void Dwin_Poll(pDwinHandle pd)
  */
 static void Dwin_EventHandle(pDwinHandle pd, uint8_t *pSite)
 {
-	TYPEDEF_STRUCT data = (TYPEDEF_STRUCT)Get_Data(pd, 7U, pd->Slave.pRbuf[6U]) / 10.0F;
+#define INPUT_PRECISION 10.0F
+	TYPEDEF_STRUCT data = (TYPEDEF_STRUCT)Get_Data(pd, 7U, pd->Slave.pRbuf[6U]) / INPUT_PRECISION;
 	// TYPEDEF_STRUCT *pdata = (TYPEDEF_STRUCT *)pd->Slave.pMap[*pSite].pHandle;
 	TYPEDEF_STRUCT *pdata = (TYPEDEF_STRUCT *)pd->Slave.pHandle;
+	Save_HandleTypeDef *ps = &Save_Flash;
 
 #if defined(USING_DEBUG)
 	shellPrint(Shell_Object, "data = %.3f, *psite = %d.\r\n", data, *pSite);
@@ -366,12 +371,22 @@ static void Dwin_EventHandle(pDwinHandle pd, uint8_t *pSite)
 #if defined(USING_FREERTOS)
 		taskENTER_CRITICAL();
 #endif
+		/*计算crc校验码*/
+		ps->Param.crc16 = Get_Crc16((uint8_t *)&ps->Param, sizeof(Save_Param) - sizeof(ps->Param.crc16), 0xFFFF);
 		/*参数保存到Flash*/
 		FLASH_Write(PARAM_SAVE_ADDRESS, (uint16_t *)&Save_Flash.Param, sizeof(Save_Param));
 #if defined(USING_FREERTOS)
 		taskEXIT_CRITICAL();
 #endif
 		Endian_Swap((uint8_t *)&data, 0U, sizeof(TYPEDEF_STRUCT));
+		/*数据写回保持寄存器区*/
+		mdSTATUS ret = mdRTU_WriteHoldRegs(Slave1_Object, PARAM_MD_ADDR + (*pSite) * 2U, 2U, (mdU16 *)&data);
+		if (ret == mdFALSE)
+		{
+#if defined(USING_DEBUG)
+			shellPrint(Shell_Object, "Holding register addr[0x%x], Write: %.3f failed!\r\n", PARAM_MD_ADDR + (*pSite) * 2U, data);
+#endif
+		}
 		/*确认数据回传到屏幕*/
 		pd->Dw_Write(pd, pd->Slave.pMap[*pSite].addr, (uint8_t *)&data, sizeof(TYPEDEF_STRUCT));
 #if defined(USING_DEBUG)
@@ -434,6 +449,9 @@ static void Restore_Factory(pDwinHandle pd, uint8_t *pSite)
 #if defined(USING_FREERTOS)
 		taskEXIT_CRITICAL();
 #endif
+		extern void Param_WriteBack(Save_HandleTypeDef * ps);
+		/*更新屏幕同时，更新远程参数*/
+		Param_WriteBack(ps);
 		Report_Backparam(Dwin_Object, &ps->Param);
 #if defined(USING_DEBUG)
 		shellPrint(Shell_Object, "success: Factory settings restored successfully!\r\n");
@@ -455,13 +473,15 @@ static void Password_Handle(pDwinHandle pd, uint8_t *pSite)
 	uint16_t data = Get_Data(pd, 7U, pd->Slave.pRbuf[6U]);
 	uint16_t addr = pd->Slave.pMap[*pSite].addr;
 	static uint16_t user_name = 0x0000, user_code = 0x0000, error = 0x0000;
+	Save_HandleTypeDef *ps = &Save_Flash;
+	uint16_t default_name = ps->Param.User_Name, defalut_code = ps->Param.User_Code;
 
 	if ((data >= pd->Slave.pMap[*pSite].lower) && (data <= pd->Slave.pMap[*pSite].upper))
 	{
 		addr == USER_NAME_ADDR ? user_name = data : (addr == USER_PASSWORD_ADDR ? user_code = data : 0U);
 		if ((addr == LOGIN_SURE_ADDR) && (data == RSURE_CODE))
 		{ /*密码用户名正确*/
-			if ((user_name == USER_NAMES) && (user_code == USER_PASSWORD))
+			if ((user_name == default_name) && (user_code == defalut_code))
 			{ /*清除错误信息*/
 				error = 0x0000;
 				pd->Dw_Page(pd, PAGE_NUMBER);
@@ -472,7 +492,7 @@ static void Password_Handle(pDwinHandle pd, uint8_t *pSite)
 			else
 			{
 				/*用户名、密码错误*/
-				if ((user_name != USER_NAMES) && (user_code != USER_PASSWORD))
+				if ((user_name != default_name) && (user_code != defalut_code))
 				{
 					error = 0x0300;
 #if defined(USING_DEBUG)
@@ -480,7 +500,7 @@ static void Password_Handle(pDwinHandle pd, uint8_t *pSite)
 #endif
 				}
 				/*用户名错误*/
-				else if (user_name != USER_NAMES)
+				else if (user_name != default_name)
 				{
 					error = 0x0100;
 #if defined(USING_DEBUG)

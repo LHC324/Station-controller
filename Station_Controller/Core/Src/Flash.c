@@ -79,7 +79,8 @@ uint32_t FLASH_Write(uint32_t Address, const uint16_t *pBuf, uint32_t Size)
 	HAL_FLASHEx_Erase(&pEraseInit, &PageError);
 	/*3、对FLASH烧写*/
 	uint16_t data = 0;
-	for (uint32_t i = 0; i < Size; i++)
+	/*size是按字节，写入是按半字*/
+	for (uint32_t i = 0; i < (Size / 2U); i++)
 	{
 		data = *(pBuf + i);
 		HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, Address + i * 2, data);

@@ -81,6 +81,7 @@ struct ModbusRTUSlave
     mdBOOL updateFlag;
     ReceiveBufferHandle receiveBuffer;
     RegisterPoolHandle registerPool;
+    mdVOID (*mdRTUHook)(ModbusRTUSlaveHandler, mdU16);
     mdVOID (*mdRTUPopChar)(ModbusRTUSlaveHandler handler, mdU8 *data, mdU32 length);
     mdVOID (*mdRTUCenterProcessor)(ModbusRTUSlaveHandler handler);
     mdVOID (*mdRTUError)(ModbusRTUSlaveHandler handler, mdU8 error);

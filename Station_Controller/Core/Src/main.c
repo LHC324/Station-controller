@@ -33,12 +33,15 @@
 #include "mdrtuslave.h"
 #include "dwin.h"
 #include "Flash.h"
+#include "tool.h"
+#include "lte.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 Save_Param Save_InitPara = {
-    .flag = SAVE_SURE_CODE,
+    // .flag = SAVE_SURE_CODE,
+    .crc16 = 0x9D61, // 0xE31A
     .Ptank_max = 4.0F,
     .Ptank_min = 0.0F,
     .Pvap_outlet_max = 4.0F,
@@ -53,15 +56,23 @@ Save_Param Save_InitPara = {
     .Ltoler_lower = 0.5F,
     .PSspf_start = 2.0F,
     .PSspf_stop = 1.8F,
-    .PSvap_outlet_limit = 1.1F,
+    // .PSvap_outlet_limit = 1.1F,
+    .PSvap_outlet_Start = 1.2F,
     .Pback_difference = 0.2F,
-    .Ptank_difference = 2.1F,
-    .PPvap_outlet_limit = 2.2F,
+    .Ptank_difference = 2.0F,
+    // .PPvap_outlet_limit = 2.2F,
+    .PPvap_outlet_Start = 2.2F,
     .PPspf_start = 2.3F,
     .PPspf_stop = 2.1F,
     .Ptank_limit = 1.2F,
     .Ltank_limit = 2.0F,
-    .Pvap_outlet_stop = 1.8F,
+    // .Pvap_outlet_stop = 1.8F,
+    .PPvap_outlet_stop = 1.8F,
+    .PSvap_outlet_stop = 1.1F,
+    .User_Name = 0x07E6,
+    .User_Code = 0x0522,
+    .Error_Code = 0x0000,
+    // .Update = 0xFFFFFFFF,
 };
 /* USER CODE END PTD */
 
@@ -89,7 +100,43 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+/**
+ * @brief	后台设置参数写会modbus保持寄存�?
+ * @details
+ * @param	ps 指向第一个后台参数地�?
+ * @retval	None
+ */
+void Param_WriteBack(Save_HandleTypeDef *ps)
+{
+  uint16_t len = sizeof(Save_Param) - sizeof(uint32_t) - sizeof(ps->Param.crc16);
+  /*Parameters are written to the mdbus hold register*/
+  float *pdata = (float *)CUSTOM_MALLOC(len);
+  if (pdata && ps)
+  {
+    memset(pdata, 0x00, len);
+    memcpy(pdata, &ps->Param, len);
+    for (uint8_t i = 0; i < len / sizeof(float); i++)
+    {
+      Endian_Swap((uint8_t *)&pdata[i], 0U, sizeof(float));
+    }
+    mdSTATUS ret = mdRTU_WriteHoldRegs(Slave1_Object, PARAM_MD_ADDR, len, (mdU16 *)pdata);
+    /*Write user name and password*/
+    ret = mdRTU_WriteHoldRegs(Slave1_Object, MDUSER_NAME_ADDR, 2U, (mdU16 *)&ps->Param.User_Name);
+    mdU16 temp_data[2U] = {(mdU16)CURRENT_SOFT_VERSION, (mdU16)((uint32_t)((*(__IO uint32_t *)UPDATE_SAVE_ADDRESS) >> 16U))};
+#if defined(USING_DEBUG)
+    shellPrint(Shell_Object, "version:%d, flag:%d.\r\n", temp_data[0], temp_data[1]);
+#endif
+    /*Write software version number and status*/
+    ret = mdRTU_WriteHoldRegs(Slave1_Object, SOFT_VERSION_ADDR, 2U, temp_data);
+    if (ret == mdFALSE)
+    {
+#if defined(USING_DEBUG)
+      shellPrint(Shell_Object, "Parameter write to hold register failed!\r\n");
+#endif
+    }
+  }
+  CUSTOM_FREE(pdata);
+}
 /* USER CODE END 0 */
 
 /**
@@ -135,21 +182,35 @@ int main(void)
   MX_DwinInit();
   FLASH_Init();
   FLASH_Read(PARAM_SAVE_ADDRESS, &ps->Param, sizeof(Save_Param));
+  /*Must be 4 byte aligned!!!*/
+  uint16_t crc16 = Get_Crc16((uint8_t *)&ps->Param, sizeof(Save_Param) - sizeof(ps->Param.crc16), 0xFFFF);
 #if defined(USING_DEBUG)
-  shellPrint(Shell_Object, "ps->Param.flag = 0x%x\r\n", ps->Param.flag);
+  // shellPrint(Shell_Object, "ps->Param.flag = 0x%x\r\n", ps->Param.flag);
+  shellPrint(Shell_Object, "ps->Param.crc16 = 0x%x, crc16 = 0x%x.\r\n", ps->Param.crc16, crc16);
 #endif
-  if (Save_Flash.Param.flag != SAVE_SURE_CODE)
+  // if (Save_Flash.Param.flag != SAVE_SURE_CODE)
+  if (crc16 != ps->Param.crc16)
   {
+    Save_InitPara.crc16 = Get_Crc16((uint8_t *)&Save_InitPara, sizeof(Save_Param) - sizeof(Save_InitPara.crc16), 0xFFFF);
     memcpy(&ps->Param, &Save_InitPara, sizeof(Save_Param));
     FLASH_Write(PARAM_SAVE_ADDRESS, (uint16_t *)&Save_InitPara, sizeof(Save_Param));
 #if defined(USING_DEBUG)
-    shellPrint(Shell_Object, "First initialization of flash parameters!\r\n");
+    shellPrint(Shell_Object, "Save_InitPara.crc16 = 0x%x,First initialization of flash parameters!\r\n", Save_InitPara.crc16);
 #endif
+    /*Initial 4G module*/
+    MX_AtInit();
+    if (At_Object)
+    {
+      At_Object->AT_SetDefault(At_Object);
+      At_Object->Free_AtObject(&At_Object);
+    }
   }
   if (Slave1_Object)
   {
     /*DMA buffer must point to an entity address!!!*/
     HAL_UART_Receive_DMA(&huart3, mdRTU_Recive_Buf(Slave1_Object), MODBUS_PDU_SIZE_MAX);
+    /*Parameters are written to the mdbus hold register*/
+    Param_WriteBack(ps);
   }
   if (Slave2_Object)
   {
@@ -161,6 +222,8 @@ int main(void)
     /*DMA buffer must point to an entity address!!!*/
     HAL_UART_Receive_DMA(&huart1, Dwin_Recive_Buf(Dwin_Object), Dwin_Rx_Size(Dwin_Object));
   }
+  /*Turn off the global interrupt in bootloader, and turn it on here*/
+  __set_FAULTMASK(0);
   /*Solve the problem that the background data cannot be received due to the unstable power supply when the Devon screen is turned on*/
   HAL_Delay(2000);
   Report_Backparam(Dwin_Object, &ps->Param);
@@ -171,6 +234,7 @@ int main(void)
 
   /* Call init function for freertos objects (in freertos.c) */
   MX_FREERTOS_Init();
+
   /* Start scheduler */
   osKernelStart();
 
@@ -210,6 +274,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+
   /** Initializes the CPU, AHB and APB buses clocks
    */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
@@ -287,5 +352,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

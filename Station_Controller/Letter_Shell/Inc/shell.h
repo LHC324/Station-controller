@@ -15,7 +15,7 @@
 #include "shell_cfg.h"
 
 #define     SHELL_VERSION               "3.1.1"                 /**< 版本号 */
-
+#define     SOFT_VERSION                "1.0.5"
 
 /**
  * @brief shell 断言

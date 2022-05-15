@@ -14,6 +14,7 @@
                 "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\Dwin\\Inc",
                 "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\Letter_Shell\\Inc",
                 "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\FreeModBus\\Inc",
+                "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\Upgrade_4G\\Inc",
                 "C:\\Keil_v5\\ARM\\ARMCC\\include",
                 "C:\\Keil_v5\\ARM\\ARMCC\\include\\rw",
                 "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\MDK-ARM",
@@ -21,6 +22,7 @@
                 "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\Dwin\\Src",
                 "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\FreeModBus\\Src",
                 "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\Letter_Shell\\Src",
+                "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\Upgrade_4G\\Src",
                 "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\Drivers\\STM32F1xx_HAL_Driver\\Src",
                 "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\Middlewares\\Third_Party\\FreeRTOS\\Source",
                 "g:\\STM32_Workers\\STM32F1\\Station_Controller\\Station_Controller\\Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang"
@@ -29,6 +31,7 @@
                 "USE_HAL_DRIVER",
                 "STM32F103xE",
                 "USING_FREERTOS",
+                "USER_VECT_TAB_ADDRESS",
                 "__CC_ARM",
                 "__arm__",
                 "__align(x)=",

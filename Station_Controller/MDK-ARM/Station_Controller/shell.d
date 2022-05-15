@@ -1,10 +1,10 @@
 station_controller\shell.o: ..\Letter_Shell\Src\shell.c
-station_controller\shell.o: ..\Letter_Shell\Inc\shell.h
-station_controller\shell.o: ..\Letter_Shell\Inc\shell_cfg.h
+station_controller\shell.o: ../Letter_Shell/Inc/shell.h
+station_controller\shell.o: ../Letter_Shell/Inc/shell_cfg.h
 station_controller\shell.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 station_controller\shell.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 station_controller\shell.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdarg.h
-station_controller\shell.o: ..\Letter_Shell\Inc\shell_ext.h
+station_controller\shell.o: ../Letter_Shell/Inc/shell_ext.h
 station_controller\shell.o: ../Core/Inc/main.h
 station_controller\shell.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 station_controller\shell.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -41,7 +41,7 @@ station_controller\shell.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_ti
 station_controller\shell.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 station_controller\shell.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 station_controller\shell.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
-station_controller\shell.o: ..\Letter_Shell\Inc\shell_port.h
+station_controller\shell.o: ../Letter_Shell/Inc/shell_port.h
 station_controller\shell.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h
 station_controller\shell.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
 station_controller\shell.o: ../Core/Inc/FreeRTOSConfig.h

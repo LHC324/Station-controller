@@ -24,6 +24,13 @@
 #define Get_ADC_Channel(__Ch, __Offset, __MaxCh) \
     ((__Ch) < (__Offset) ? ((__MaxCh)-1U - (__Ch)) : ((__Ch) - (__Offset)))
 
+Dac_Obj dac_object_group[EXTERN_ANALOGOUT_MAX] = {
+    {.Channel = DAC_OUT1, .Mcpxx_Id = Input_A},
+    {.Channel = DAC_OUT2, .Mcpxx_Id = Input_B},
+    {.Channel = DAC_OUT3, .Mcpxx_Id = Input_Other},
+    {.Channel = DAC_OUT4, .Mcpxx_Id = Input_Other},
+};
+
 /**
  * @brief	外部数字量输入处理
  * @details	STM32F103C8T6共在io口扩展了8路数字输入
@@ -102,6 +109,7 @@ void Read_Analog_Io(void)
 {
 #define CP 0.005378F
 #define CQ 0.375224F
+#define P (3.0F / 2.0F)
     mdSTATUS ret = mdFALSE;
     uint16_t tch = 0;
     static bool first_flag = false;
@@ -115,7 +123,7 @@ void Read_Analog_Io(void)
         .Q = COVAR_Q,
         .R = COVAR_R,
     };
-    static KFP pkpf[ADC_DMA_CHANNEL];
+    static KFP pkfp[ADC_DMA_CHANNEL];
 #else
     SideParm side = {
         .First_Flag = true,
@@ -134,7 +142,7 @@ void Read_Analog_Io(void)
 #if defined(KALMAN)
             memcpy(&pkfp[ch], &hkfp, sizeof(hkfp));
 #else
-            memcpy(&pside[ch], &side, sizeof(pside));
+            memcpy(&pside[ch], &side, sizeof(side));
 #endif
         }
     }
@@ -180,8 +188,8 @@ void Read_Analog_Io(void)
     for (uint16_t ch = 0; ch < ADC_DMA_CHANNEL; ch++)
     { /*获取DAC值*/
         tch = Get_ADC_Channel(ch, 4U, ADC_DMA_CHANNEL);
-        pdata[ch] = CP * Get_AdcValue(tch) + CQ;
-        pdata[ch] = (pdata[ch] <= CQ) ? 0 : pdata[ch];
+        pdata[ch] = (CP * Get_AdcValue(tch) + CQ) * P;
+        pdata[ch] = (pdata[ch] <= (CQ * P)) ? 0 : pdata[ch];
         /*滤波处理*/
 #if defined(KALMAN)
         pdata[ch] = kalmanFilter(&pkfp[ch], pdata[ch]);
@@ -223,12 +231,12 @@ void Read_Analog_Io(void)
 void Write_Analog_IO(void)
 {
     mdSTATUS ret = mdFALSE;
-    Dac_Obj dac_object[EXTERN_ANALOGOUT_MAX] = {
-        {.Channel = DAC_OUT1, .Mcpxx_Id = Input_A},
-        {.Channel = DAC_OUT2, .Mcpxx_Id = Input_B},
-        {.Channel = DAC_OUT3, .Mcpxx_Id = Input_Other},
-        {.Channel = DAC_OUT4, .Mcpxx_Id = Input_Other},
-    };
+    // Dac_Obj dac_object[EXTERN_ANALOGOUT_MAX] = {
+    //     {.Channel = DAC_OUT1, .Mcpxx_Id = Input_A},
+    //     {.Channel = DAC_OUT2, .Mcpxx_Id = Input_B},
+    //     {.Channel = DAC_OUT3, .Mcpxx_Id = Input_Other},
+    //     {.Channel = DAC_OUT4, .Mcpxx_Id = Input_Other},
+    // };
 #if defined(USING_FREERTOS)
     float *pdata = (float *)CUSTOM_MALLOC(EXTERN_ANALOGOUT_MAX * sizeof(float));
     if (!pdata)
@@ -253,9 +261,36 @@ void Write_Analog_IO(void)
 #if defined(USING_DEBUG)
         // shellPrint(Shell_Object, "W_AD[%d] = %.3f\r\n", ch, pdata[ch]);
 #endif
-        Output_Current(&dac_object[ch], pdata[ch]);
+        Output_Current(&dac_object_group[ch], pdata[ch]);
     }
 #if defined(USING_FREERTOS)
     CUSTOM_FREE(pdata);
 #endif
+}
+
+/**
+ * @brief	读取4G模块引脚的状态（Work、Net、Link）
+ * @details	本次硬件无Work，NET接PE15、LINK接PE13
+ *          受大小端影响，仅需放在低8bit
+ * @param	None
+ * @retval	三个灯状态（8-10bit）
+ */
+uint8_t Read_LTE_State(void)
+{
+#define PIN_NUM 3U
+    GPIO_TypeDef *pGPIOx = NET_4G_GPIO_Port;
+    uint16_t GPIO_Pinx;
+    uint16_t status = 0U;
+    uint8_t bit = 0;
+
+    for (uint8_t i = 0; i < PIN_NUM; i++)
+    {
+        GPIO_Pinx = i > 1U ? LINK_4G_Pin : NET_4G_Pin;
+        bit = (uint32_t)(pGPIOx->IDR & GPIO_Pinx) ? 0U : 1U;
+        status |= (uint8_t)(bit << i);
+    }
+#if defined(USING_DEBUG)
+    // shellPrint(Shell_Object, "LTE_Status = 0x%x.\r\n", status);
+#endif
+    return status;
 }

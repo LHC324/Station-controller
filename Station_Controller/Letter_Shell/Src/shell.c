@@ -112,6 +112,7 @@ static const char *shellText[] =
             " "__TIME__
             "\r\n"
             "Version:     " SHELL_VERSION "\r\n"
+            "Soft_Ver:    " SOFT_VERSION "\r\n"
             "Copyright:   (c) 2020 Letter\r\n",
 #endif
 #endif

@@ -1,5 +1,5 @@
 station_controller\tool.o: ..\Dwin\Src\tool.c
-station_controller\tool.o: ..\Dwin\Inc\tool.h
+station_controller\tool.o: ../Dwin/Inc/tool.h
 station_controller\tool.o: ../Core/Inc/main.h
 station_controller\tool.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 station_controller\tool.o: ../Core/Inc/stm32f1xx_hal_conf.h

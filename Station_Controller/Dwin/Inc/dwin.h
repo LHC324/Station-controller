@@ -70,16 +70,19 @@
 #define LEVEL_MIN_ADDR 0x1046	  //液位容差下限地址
 #define SPSFS_MAX_ADDR 0x1048	  //启动模式时储槽泄压启动值上限地址
 #define SPSFS_MIN_ADDR 0x104A	  //启动模式时储槽泄压启动值下限地址
-#define PSVA_LIMIT_ADDR 0x104C	  //启动模式时汽化器出口压力阈值地址
+#define PSVA_LIMIT_ADDR 0x104C	  //启动模式时汽化器出口压力泄压启动地址
 #define PBACK_MAX_ADDR 0x104E	  // B2-B1回压差上限地址
 #define PBACK_MIN_ADDR 0x1050	  //储槽回压差下限地址
-#define PEVA_LIMIT_ADDR 0x1052	  //停机模式时汽化器出口压力阈值地址
+#define PEVA_LIMIT_ADDR 0x1052	  //停机模式时汽化器出口压力泄压启动地址
 #define SPSFE_MAX_ADDR 0x1054	  //停机模式时储槽泄压启动值上限地址
 #define SPSFE_MIN_ADDR 0x1056	  //停机模式时储槽泄压启动值下限地址
 #define PTANK_LIMIT_ADDR 0x1058	  //安全策略储槽压力极限
 #define LTANK_LIMIT_ADDR 0x105A	  //安全策略储槽液位极限
-#define PVAP_STOP_ADDR 0x105C	  //汽化器出口压力停止值
-#define RESTORE_ADDR 0x105E		  //恢复出厂设置地址
+#define PVAP_STOP_ADDR 0x105C	  //停机模式汽化器出口压力停止值
+#define PSVAP_STOP_ADDR 0x105E	  //启动模式汽化器出口压力停止值
+#define RESTORE_ADDR 0x1060		  //恢复出厂设置地址
+#define ERROR_CODE_ADDR 0x1062	  //错误代码地址
+#define ERROR_ANMATION 0x1063	  //错误动画地址
 #define RSURE_CODE 0x00F1		  //恢复出厂设置确认键值
 #define RCANCEL_CODE 0x00F0		  //注销键值
 
@@ -104,6 +107,7 @@ struct Dwin_HandleTypeDef
 	void (*Dw_Read)(pDwinHandle, uint16_t, uint8_t);
 	void (*Dw_Page)(pDwinHandle, uint16_t);
 	void (*Dw_Poll)(pDwinHandle);
+	void (*Dw_Handle)(pDwinHandle, uint8_t *);
 	void (*Dw_Error)(pDwinHandle, uint8_t, uint8_t);
 	struct
 	{

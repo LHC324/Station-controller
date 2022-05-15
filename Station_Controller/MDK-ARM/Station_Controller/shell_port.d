@@ -1,7 +1,7 @@
 station_controller\shell_port.o: ..\Letter_Shell\Src\shell_port.c
-station_controller\shell_port.o: ..\Letter_Shell\Inc\shell_port.h
-station_controller\shell_port.o: ..\Letter_Shell\Inc\shell.h
-station_controller\shell_port.o: ..\Letter_Shell\Inc\shell_cfg.h
+station_controller\shell_port.o: ../Letter_Shell/Inc/shell_port.h
+station_controller\shell_port.o: ../Letter_Shell/Inc/shell.h
+station_controller\shell_port.o: ../Letter_Shell/Inc/shell_cfg.h
 station_controller\shell_port.o: ../Core/Inc/usart.h
 station_controller\shell_port.o: ../Core/Inc/main.h
 station_controller\shell_port.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h

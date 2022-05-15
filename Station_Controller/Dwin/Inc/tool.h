@@ -7,8 +7,8 @@ extern "C"
 #endif
 #include "main.h"
 
-    /*使用卡尔曼滤波*/
-    // #define KALMAN
+/*使用卡尔曼滤波*/
+#define KALMAN
 
 #if defined(KALMAN)
 /*以下为卡尔曼滤波参数*/

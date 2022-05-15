@@ -33,6 +33,8 @@
 #include "dwin.h"
 #include "adc.h"
 #include "tool.h"
+#include "Flash.h"
+#include "Mcp4822.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -88,7 +90,7 @@
 
 Save_HandleTypeDef Save_Flash;
 Save_User *puser = &Save_Flash.User;
-GPIO_PinState g_Status = GPIO_PIN_SET;
+// GPIO_PinState g_Status = GPIO_PIN_SET;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -147,7 +149,7 @@ void Report_Backparam(pDwinHandle pd, Save_Param *sp)
 #endif
     Endian_Swap((uint8_t *)p, 0U, sizeof(float));
   }
-  pd->Dw_Write(pd, PARAM_SETTING_ADDR, (uint8_t *)pdata, sizeof(Save_Param));
+  pd->Dw_Write(pd, PARAM_SETTING_ADDR, (uint8_t *)pdata, sizeof(Save_Param) - (sizeof(sp->User_Name) + sizeof(sp->User_Code) + sizeof(sp->Error_Code) + sizeof(sp->crc16)));
 
 __exit:
   CUSTOM_FREE(pdata);
@@ -163,7 +165,7 @@ bool Check_Mode(ModbusRTUSlaveHandler handler)
 {
   ReceiveBufferHandle pB = handler->receiveBuffer;
 
-  return (!!((pB->count > 0U) && (pB->buf[0] == ENTER_CODE)));
+  return (!!((pB->count == 1U) && (pB->buf[0] == ENTER_CODE)));
 }
 /**
  * @brief   enter shell mode
@@ -171,21 +173,21 @@ bool Check_Mode(ModbusRTUSlaveHandler handler)
  * @param	None
  * @retval	None
  */
-static void Shell_Mode(void)
-{
-  __HAL_UART_DISABLE_IT(&huart3, UART_IT_IDLE);
-  HAL_NVIC_DisableIRQ(USART3_IRQn);
-  if (HAL_UART_DMAStop(&huart3) != HAL_OK)
-  {
-    return;
-  }
-  /*Pending upgrade task*/
-  osThreadSuspend(UpdateHandle);
-  /*Resume shell task*/
-  osThreadResume(ShellHandle);
-  /*stop send timer*/
-  osTimerStop(mdtimerHandle);
-}
+// static void Shell_Mode(void)
+// {
+//   __HAL_UART_DISABLE_IT(&huart3, UART_IT_IDLE);
+//   HAL_NVIC_DisableIRQ(USART3_IRQn);
+//   if (HAL_UART_DMAStop(&huart3) != HAL_OK)
+//   {
+//     return;
+//   }
+//   /*Pending upgrade task*/
+//   osThreadSuspend(UpdateHandle);
+//   /*Resume shell task*/
+//   osThreadResume(ShellHandle);
+//   /*stop send timer*/
+//   osTimerStop(mdtimerHandle);
+// }
 
 /**
  * @brief   exit shell mode
@@ -451,14 +453,53 @@ void Out_Task(void const *argument)
 void Update_Task(void const *argument)
 {
   /* USER CODE BEGIN Update_Task */
+  uint32_t update_flag = 0;
   /* Infinite loop */
   for (;;)
   {
     /*https://www.cnblogs.com/w-smile/p/11333950.html*/
     if (osOK == osSemaphoreWait(Recive_Uart3Handle, osWaitForever))
     {
-      // Check_Mode((struct ModbusRTUSlave *)argument) ? Shell_Mode() : mdRTU_Handler(Slave1_Object);
-      mdRTU_Handler(Slave1_Object);
+      // Check_Mode((struct ModbusRTUSlave *)argument) ? (__set_FAULTMASK(1), NVIC_SystemReset()) : mdRTU_Handler(Slave1_Object);
+      if (Check_Mode((struct ModbusRTUSlave *)argument))
+      {
+#if defined(USING_DEBUG)
+        shellPrint(Shell_Object, "About to enter upgrade mode .......\r\n");
+#endif
+        /*Clear mcp4822 output*/
+        extern Dac_Obj dac_object_group[EXTERN_ANALOGOUT_MAX];
+        for (uint8_t ch = 0; ch < EXTERN_ANALOGOUT_MAX; ch++)
+        {
+          Output_Current(&dac_object_group[ch], 0);
+        }
+        /*Switch to the upgrade page*/
+        if (Dwin_Object)
+        {
+#define Update_Page 0x0F
+          Dwin_Object->Dw_Page(Dwin_Object, Update_Page);
+        }
+
+        update_flag = (*(__IO uint32_t *)UPDATE_SAVE_ADDRESS);
+
+        if (((update_flag & 0xFFFF0000) >> 16U) == UPDATE_APP1)
+        {
+          update_flag = (((uint32_t)UPDATE_APP2 << 16U) | UPDATE_CMD);
+        }
+        else
+        {
+          update_flag = (((uint32_t)UPDATE_APP1 << 16U) | UPDATE_CMD);
+        }
+        // update_flag = ((*(__IO uint32_t *)UPDATE_SAVE_ADDRESS) & 0xFFFF0000) | UPDATE_CMD;
+        taskENTER_CRITICAL();
+        FLASH_Write(UPDATE_SAVE_ADDRESS, (uint16_t *)&update_flag, sizeof(update_flag));
+        taskEXIT_CRITICAL();
+        NVIC_SystemReset();
+      }
+      else
+      {
+        mdRTU_Handler(Slave1_Object);
+      }
+      // mdRTU_Handler(Slave1_Object);
     }
   }
   /* USER CODE END Update_Task */
@@ -543,7 +584,7 @@ void Contrl_Task(void const *argument)
 #define Clear_Counter(__obj) ((__obj)->counts = 0U)
 #define Open_Vx(__x) ((__x) <= VX_SIZE ? wbit[__x - 1U] = true : false)
 #define Close_Vx(__x) ((__x) <= VX_SIZE ? wbit[__x - 1U] = false : false)
-  mdBit sbit = mdLow;
+  mdBit sbit = mdLow, mode = mdLow;
   // mdU32 addr;
   mdSTATUS ret = mdFALSE;
   static mdBit wbit[] = {false, false, false, false, false};
@@ -558,6 +599,7 @@ void Contrl_Task(void const *argument)
   /* Infinite loop */
   for (;;)
   {
+    uint16_t error_code = 0;
     // goto __no_action;
     // memset((void *)&pas->User, 0x00, BX_SIZE * 2U);
     memset((void *)&ps->User, 0x00, BX_SIZE * 2U);
@@ -574,10 +616,18 @@ void Contrl_Task(void const *argument)
     for (float *p = &ps->User.Ptank, *pu = &ps->Param.Ptank_max, *pinfo = (float *)&usinfo;
          p < &ps->User.Ptank + BX_SIZE; p++, pu += 2U, pinfo++)
     {
+#define ERROR_BASE_CODE 0x02
+      uint8_t site = p - &ps->User.Ptank;
 #if defined(USING_DEBUG)
       // shellPrint(Shell_Object, "R_Current[0x%X] = %.3f\r\n", p, *p);
 #endif
       Endian_Swap((uint8_t *)p, 0U, sizeof(float));
+      /*User sensor access error check*/
+#define ERROR_CHECK
+      {
+        if (!error_code)
+          error_code = *p <= 0.0F ? (3U * site + ERROR_BASE_CODE) : (*p < CURRENT_LOWER ? (3U * site + ERROR_BASE_CODE + 1U) : (*p > (CURRENT_LOWER + CURRENT_UPPER + 1.0F) ? (3U * site + ERROR_BASE_CODE + 2U) : 0));
+      }
       /*Convert analog signal into physical quantity*/
       *p = Get_Target(*p, *pu, *(pu + 1U));
       *p = *p <= 0.0F ? 0 : *p;
@@ -586,6 +636,7 @@ void Contrl_Task(void const *argument)
       // shellPrint(Shell_Object, "max = %.3f,min = %.3f, C_Value[0x%p] = %.3fMpa/M3\r\n", *pu, *(pu + 1U), p, *p);
 #endif
     }
+    ps->Param.Error_Code = error_code;
     taskEXIT_CRITICAL();
     xQueueSend(UserQueueHandle, &usinfo, 10);
 
@@ -605,13 +656,31 @@ void Contrl_Task(void const *argument)
 #endif
       goto __no_action;
     }
+    /*Manual mode management highest authority*/
+    ret = mdRTU_ReadCoil(Slave1_Object, M_MODE_ADDR, mode);
+    if (ret == mdFALSE)
+    {
+#if defined(USING_DEBUG)
+      shellPrint(Shell_Object, "Mode[%d] = 0x%d\r\n", INPUT_DIGITAL_START_ADDR, mode);
+#endif
+      goto __no_action;
+    }
+    if (mode == mdHigh)
+    {
+#if defined(USING_DEBUG)
+      shellPrint(Shell_Object, "Note: Manual mode startup, automatic management failure!\r\n");
+#endif
+      /*Clear error codes*/
+      ps->Param.Error_Code = 0;
+      goto __exit;
+    }
     /*Safe operation guarantee*/
 #define SAFETY
-    { /*V1在开始�?�停机模式只有打�??，没有关闭！！！*/
-      if ((ps->User.Ptank <= ps->Param.Ptank_limit) || (ps->User.Ltank <= ps->Param.Ltank_limit))
+    { /*V1在开始�?�停机模式只有打�???，没有关闭！！！*/
+      if ((ps->User.Ptank <= ps->Param.Ptank_limit) || (ps->User.Ltank <= ps->Param.Ltank_limit) || (ps->Param.Error_Code))
       {
         /*close V1、V2、V3*/
-        Close_Vx(1U), Close_Vx(2U), Close_Vx(3U);
+        Close_Vx(1U), Close_Vx(2U), Close_Vx(3U), Close_Vx(4U), Close_Vx(5U);
 #if defined(USING_DEBUG_APPLICATION)
         shellPrint(Shell_Object, "SAF: close V1 V2 V3\r\n");
 #endif
@@ -700,7 +769,38 @@ void Contrl_Task(void const *argument)
       }
 #define B1C1
       {
-        if (ps->User.Pvap_outlet >= ps->Param.PSvap_outlet_limit)
+        //         if (ps->User.Pvap_outlet >= ps->Param.PSvap_outlet_limit)
+        //         {
+        //           Set_SoftTimer_Flag(&timer[1U], true);
+        //           if (Sure_Overtimes(&timer[1U], STIMES))
+        //           {
+        //             // osDelay(10000);
+        //             /*open V3*/
+        //             Open_Vx(3U);
+        // #if defined(USING_DEBUG_APPLICATION)
+        //             shellPrint(Shell_Object, "B1C1: open V3\r\n");
+        // #endif
+        //           }
+        //           /*open V1 、close V2*/
+        //           Open_Vx(1U), Close_Vx(2U);
+        // #if defined(USING_DEBUG_APPLICATION)
+        //           shellPrint(Shell_Object, "B1C1: open V1 close V2\r\n");
+        // #endif
+        //         }
+        //         else
+        //         {
+        //           /*Clear counter*/
+        //           Clear_Counter(&timer[1U]);
+        //           /*open counter*/
+        //           // Set_SoftTimer_Flag(&timer[1U], true);
+        //           /*close V3*/
+        //           Close_Vx(3U), Close_Vx(1U), Open_Vx(2U);
+        // #if defined(USING_DEBUG_APPLICATION)
+        //           shellPrint(Shell_Object, "B1C1: close V3 close V1 open V2\r\n");
+        // #endif
+        //         }
+
+        if (ps->User.Pvap_outlet >= ps->Param.PSvap_outlet_Start)
         {
           Set_SoftTimer_Flag(&timer[1U], true);
           if (Sure_Overtimes(&timer[1U], STIMES))
@@ -718,7 +818,7 @@ void Contrl_Task(void const *argument)
           shellPrint(Shell_Object, "B1C1: open V1 close V2\r\n");
 #endif
         }
-        else
+        else if (ps->User.Pvap_outlet <= ps->Param.PSvap_outlet_stop)
         {
           /*Clear counter*/
           Clear_Counter(&timer[1U]);
@@ -735,6 +835,11 @@ void Contrl_Task(void const *argument)
     /*stop mode*/
     else
     {
+      /*Check whether the pressure relief operation is on*/
+      if (mutex_flag)
+      {
+        mutex_flag = false;
+      }
 #define A2
       {
         if (((ps->User.Pvap_outlet - ps->User.Ptank) >= ps->Param.Pback_difference) &&
@@ -757,7 +862,7 @@ void Contrl_Task(void const *argument)
       }
 #define B2
       {
-        if (ps->User.Pvap_outlet > ps->Param.PPvap_outlet_limit)
+        if (ps->User.Pvap_outlet >= ps->Param.PPvap_outlet_Start)
         {
           /*open V3、open V5、close V2*/
           Open_Vx(3U), Open_Vx(5U), Close_Vx(2U);
@@ -765,16 +870,13 @@ void Contrl_Task(void const *argument)
           shellPrint(Shell_Object, "B2: open V3 open V5 close V2\r\n");
 #endif
         }
-        else
+        else if (ps->User.Pvap_outlet <= ps->Param.PPvap_outlet_stop)
         {
-          if (ps->User.Pvap_outlet <= ps->Param.Pvap_outlet_stop)
-          {
-            /*close V3*/
-            Close_Vx(3U), Close_Vx(5U);
+          /*close V3*/
+          Close_Vx(3U), Close_Vx(5U);
 #if defined(USING_DEBUG_APPLICATION)
-            shellPrint(Shell_Object, "B2: close V3 close V5\r\n");
+          shellPrint(Shell_Object, "B2: close V3 close V5\r\n");
 #endif
-          }
         }
       }
 #define C2
@@ -820,6 +922,7 @@ void Contrl_Task(void const *argument)
       shellPrint(Shell_Object, "write failed!\r\n");
 #endif
     }
+  __exit:
     osDelay(1000);
   }
   /* USER CODE END Contrl_Task */
@@ -832,6 +935,9 @@ void Report(void const *argument)
   mdU16 rbit = mdLow, wbit = mdLow;
   uint8_t bit = 0;
   // mdSTATUS ret = mdFALSE;
+  uint16_t value = 0x0000;
+  static bool first_flag = false;
+  Save_HandleTypeDef *ps = &Save_Flash;
   Save_User urinfo;
 #if defined(USING_FREERTOS)
   float *pdata = (float *)CUSTOM_MALLOC(sizeof(float) * ADC_DMA_CHANNEL);
@@ -849,15 +955,17 @@ void Report(void const *argument)
     mdRTU_ReadCoil(Slave1_Object, OUT_DIGITAL_START_ADDR + i, bit);
     wbit |= bit << (i + 8U);
   }
+  /*Read 4G module status*/
+  rbit |= Read_LTE_State();
 #if defined(USING_DEBUG)
   // shellPrint(Shell_Object, "rbit = 0x%02x.\r\n", rbit);
 #endif
   /*Digital input*/
   Dwin_Object->Dw_Write(Dwin_Object, DIGITAL_INPUT_ADDR, (uint8_t *)&rbit, sizeof(rbit));
-  osDelay(10);
+  osDelay(5);
   /*Digital output*/
   Dwin_Object->Dw_Write(Dwin_Object, DIGITAL_OUTPUT_ADDR, (uint8_t *)&wbit, sizeof(wbit));
-  osDelay(10);
+  osDelay(5);
   xQueueReceive(UserQueueHandle, (void *)&urinfo, osWaitForever);
   for (float *puser = &urinfo.Ptank; puser < &urinfo.Ptank + BX_SIZE; puser++)
   {
@@ -867,14 +975,39 @@ void Report(void const *argument)
     Endian_Swap((uint8_t *)puser, 0U, sizeof(float));
   }
   Dwin_Object->Dw_Write(Dwin_Object, PRESSURE_OUT_ADDR, (uint8_t *)&urinfo, BX_SIZE * sizeof(float));
-  osDelay(10);
+  osDelay(5);
   /*Analog input*/
   mdRTU_ReadInputRegisters(Slave1_Object, INPUT_ANALOG_START_ADDR, ADC_DMA_CHANNEL * 2U, (mdU16 *)pdata);
   Dwin_Object->Dw_Write(Dwin_Object, ANALOG_INPUT_ADDR, (uint8_t *)pdata, ADC_DMA_CHANNEL * sizeof(float));
-  osDelay(10);
+  osDelay(5);
   /*Analog output*/
   mdRTU_ReadHoldRegisters(Slave1_Object, OUT_ANALOG_START_ADDR, EXTERN_ANALOGOUT_MAX * 2U, (mdU16 *)pdata);
   Dwin_Object->Dw_Write(Dwin_Object, ANALOG_OUTPUT_ADDR, (uint8_t *)pdata, EXTERN_ANALOGOUT_MAX * sizeof(float));
+  osDelay(5);
+  /*Report error code*/
+  if (ps->Param.Error_Code)
+  {
+#define ERROR_PAGE 0x0E
+#define MAIN_PAGE 0x03
+    value = (uint16_t)ps->Param.Error_Code;
+    value = (value >> 8U) | (value << 8U);
+    Dwin_Object->Dw_Write(Dwin_Object, ERROR_CODE_ADDR, (uint8_t *)&value, sizeof(value));
+    value = 0x0100;
+    osDelay(5);
+    Dwin_Object->Dw_Page(Dwin_Object, ERROR_PAGE);
+    osDelay(5);
+    /*Open error animation*/
+    Dwin_Object->Dw_Write(Dwin_Object, ERROR_ANMATION, (uint8_t *)&value, sizeof(value));
+    first_flag = false;
+  }
+  else
+  {
+    if (!first_flag)
+    {
+      first_flag = true;
+      Dwin_Object->Dw_Page(Dwin_Object, MAIN_PAGE);
+    }
+  }
 #if defined(USING_FREERTOS)
 __exit:
   CUSTOM_FREE(pdata);
@@ -887,14 +1020,16 @@ void MdTimer(void const *argument)
 {
   /* USER CODE BEGIN MdTimer */
   ModbusRTUSlaveHandler pMd = (ModbusRTUSlaveHandler)argument;
-  g_Status ^= GPIO_PIN_SET;
+  // g_Status ^= GPIO_PIN_SET;
   /*Hardware watchdog feed dog*/
-  HAL_GPIO_WritePin(WDI_GPIO_Port, WDI_Pin, g_Status);
+  // HAL_GPIO_WritePin(WDI_GPIO_Port, WDI_Pin, g_Status);
+  HAL_GPIO_TogglePin(WDI_GPIO_Port, WDI_Pin);
+
   if (!pMd)
   {
     return;
   }
-  /*考虑加互斥锁：在update�???????46指令*/
+  /*考虑加互斥锁：在update�????????46指令*/
   // mdRTU_46H(pMd->slaveId, 0x00, 0x00, 0x00, NULL);
   //  pMd->mdRTU_46H(pMd, 0x00, 0x00, 0x00, NULL);
 
@@ -941,5 +1076,3 @@ void MdTimer(void const *argument)
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -22,11 +22,14 @@ extern "C"
 #define INPUT_ANALOG_START_ADDR 0x00
 /*输出模拟信号量在内存中初始地址*/
 #define OUT_ANALOG_START_ADDR 0x00
+/*手动模式有效信号地址*/
+#define M_MODE_ADDR 0x08
 
     extern void Read_Digital_Io(void);
     extern void Read_Analog_Io(void);
     extern void Write_Digital_IO(void);
     extern void Write_Analog_IO(void);
+    extern unsigned char Read_LTE_State(void);
 
 #define Read_Io_Handle() (Read_Digital_Io(), Read_Analog_Io())
 #define Write_Io_Handle() (Write_Digital_IO(), Write_Analog_IO())

@@ -42,3 +42,6 @@ station_controller\mcp4822.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 station_controller\mcp4822.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdarg.h
 station_controller\mcp4822.o: ../Core/Inc/dac.h
 station_controller\mcp4822.o: ../Core/Inc/usart.h
+station_controller\mcp4822.o: ../Letter_Shell/Inc/shell_port.h
+station_controller\mcp4822.o: ../Letter_Shell/Inc/shell.h
+station_controller\mcp4822.o: ../Letter_Shell/Inc/shell_cfg.h

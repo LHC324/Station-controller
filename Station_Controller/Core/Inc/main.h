@@ -43,17 +43,26 @@ extern "C"
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-// #define USING_DEBUG 1
+#define USING_DEBUG 1
 // #define USING_DEBUG_APPLICATION
 #define USING_RTOS
 #define USING_DMA
 /*Custom memory management*/
 #define CUSTOM_MALLOC pvPortMalloc
 #define CUSTOM_FREE vPortFree
+#define CURRENT_SOFT_VERSION 120
+#define PARAM_MD_ADDR 0x0008
+#define MDUSER_NAME_ADDR 0x0038
+#define SOFT_VERSION_ADDR 0x003A
 #define SAVE_SIZE 26U
 #define SAVE_SURE_CODE 0x5AA58734
+#define UPDATE_FLAG_FLASH_PAGE 254
+#define UPDATE_SAVE_ADDRESS (FLASH_BASE + UPDATE_FLAG_FLASH_PAGE * FLASH_PAGE_SIZE)
 #define USER_SAVE_FLASH_PAGE 255U
 #define PARAM_SAVE_ADDRESS (FLASH_BASE + USER_SAVE_FLASH_PAGE * FLASH_PAGE_SIZE)
+#define UPDATE_CMD 0x1234
+#define UPDATE_APP1 0x5AA5
+#define UPDATE_APP2 0xA55A
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -94,16 +103,26 @@ extern "C"
     float Ltoler_lower;
     float PSspf_start;
     float PSspf_stop;
-    float PSvap_outlet_limit;
+    // float PSvap_outlet_limit;
+    float PSvap_outlet_Start;
     float Pback_difference;
     float Ptank_difference;
-    float PPvap_outlet_limit;
+    // float PPvap_outlet_limit;
+    float PPvap_outlet_Start;
     float PPspf_start;
     float PPspf_stop;
     float Ptank_limit;
     float Ltank_limit;
-    float Pvap_outlet_stop;
-    uint32_t flag;
+    // float Pvap_outlet_stop;
+    float PPvap_outlet_stop;
+    float PSvap_outlet_stop;
+    // uint32_t flag;
+    // uint32_t crc16;
+    uint16_t User_Name;
+    uint16_t User_Code;
+    // uint32_t Update;
+    uint32_t Error_Code;
+    uint32_t crc16;
   } Save_Param;
   typedef struct
   {
@@ -123,8 +142,8 @@ extern "C"
   /* Exported functions prototypes ---------------------------------------------*/
   void Error_Handler(void);
 
-/* USER CODE BEGIN EFP */
-
+  /* USER CODE BEGIN EFP */
+  extern void Param_WriteBack(Save_HandleTypeDef *ps);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -191,5 +210,3 @@ extern "C"
 #endif
 
 #endif /* __MAIN_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

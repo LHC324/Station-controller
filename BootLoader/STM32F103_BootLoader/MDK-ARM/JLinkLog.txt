@@ -1,0 +1,32 @@
+T18F4 20739:610 SEGGER J-Link V6.44a Log File (0000ms, 4256ms total)
+T18F4 20739:610 DLL Compiled: Mar  8 2019 17:31:48 (0000ms, 4256ms total)
+T18F4 20739:610 Logging started @ 2022-05-05 16:18 (0000ms, 4256ms total)
+T18F4 20739:610 JLINK_SetWarnOutHandler(...) (0000ms, 4256ms total)
+T18F4 20739:610 JLINK_OpenEx(...)
+Firmware: J-Link V11 compiled Mar 18 2020 17:39:21
+Hardware: V11.00
+S/N: 941000024
+Feature(s): GDB, JFlash, FlashDL, RDI, FlashBP
+TELNET listener socket opened on port 19021WEBSRV 
+Starting webserver (0012ms, 4268ms total)
+T18F4 20739:610 WEBSRV Webserver running on local port 19080 (0012ms, 4268ms total)
+T18F4 20739:610   returns O.K. (0012ms, 4268ms total)
+T18F4 20739:622 JLINK_GetEmuCaps()  returns 0xB9FF7BBF (0000ms, 4268ms total)
+T18F4 20739:622 JLINK_TIF_GetAvailable(...) (0001ms, 4269ms total)
+T18F4 20739:623 JLINK_SetErrorOutHandler(...) (0000ms, 4269ms total)
+T18F4 20739:623 JLINK_ExecCommand("ProjectFile = "G:\STM32_Workers\STM32F1\Station_Controller\BootLoader\STM32F103_BootLoader\MDK-ARM\JLinkSettings.ini"", ...).   returns 0x00 (0000ms, 4269ms total)
+T18F4 20739:629 JLINK_ExecCommand("Device = STM32F103VE", ...). Device "STM32F103VE" selected.  returns 0x00 (0005ms, 4274ms total)
+T18F4 20739:634 JLINK_ExecCommand("DisableConnectionTimeout", ...).   returns 0x01 (0000ms, 4274ms total)
+T18F4 20739:634 JLINK_GetHardwareVersion()  returns 0x1ADB0 (0000ms, 4274ms total)
+T18F4 20739:634 JLINK_GetDLLVersion()  returns 64401 (0000ms, 4274ms total)
+T18F4 20739:634 JLINK_GetFirmwareString(...) (0000ms, 4274ms total)
+T18F4 20739:646 JLINK_GetDLLVersion()  returns 64401 (0000ms, 4274ms total)
+T18F4 20739:646 JLINK_GetCompileDateTime() (0000ms, 4274ms total)
+T18F4 20739:656 JLINK_GetFirmwareString(...) (0000ms, 4274ms total)
+T18F4 20739:658 JLINK_GetHardwareVersion()  returns 0x1ADB0 (0000ms, 4274ms total)
+T18F4 20739:673 JLINK_TIF_Select(JLINKARM_TIF_JTAG)  returns 0x00 (0001ms, 4275ms total)
+T18F4 20739:674 JLINK_SetSpeed(33000) (0001ms, 4276ms total)
+T18F4 20739:675 JLINK_GetIdData(...) (0000ms, 4276ms total)
+T18F4 20742:284 JLINK_Close() (0011ms, 4287ms total)
+T18F4 20742:284  (0011ms, 4287ms total)
+T18F4 20742:284 Closed (0011ms, 4287ms total)

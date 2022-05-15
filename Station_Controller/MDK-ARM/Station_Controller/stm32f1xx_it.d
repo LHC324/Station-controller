@@ -53,9 +53,9 @@ station_controller\stm32f1xx_it.o: ../Middlewares/Third_Party/FreeRTOS/Source/in
 station_controller\stm32f1xx_it.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h
 station_controller\stm32f1xx_it.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h
 station_controller\stm32f1xx_it.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h
-station_controller\stm32f1xx_it.o: ..\FreeModBus\Inc\mdrtuslave.h
-station_controller\stm32f1xx_it.o: ..\FreeModBus\Inc\mdtype.h
-station_controller\stm32f1xx_it.o: ..\FreeModBus\Inc\mdconfig.h
-station_controller\stm32f1xx_it.o: ..\FreeModBus\Inc\mdregpool.h
-station_controller\stm32f1xx_it.o: ..\FreeModBus\Inc\mdrecbuffer.h
-station_controller\stm32f1xx_it.o: ..\Dwin\Inc\dwin.h
+station_controller\stm32f1xx_it.o: ../FreeModBus/Inc/mdrtuslave.h
+station_controller\stm32f1xx_it.o: ../FreeModBus/Inc/mdtype.h
+station_controller\stm32f1xx_it.o: ../FreeModBus/Inc/mdconfig.h
+station_controller\stm32f1xx_it.o: ../FreeModBus/Inc/mdregpool.h
+station_controller\stm32f1xx_it.o: ../FreeModBus/Inc/mdrecbuffer.h
+station_controller\stm32f1xx_it.o: ../Dwin/Inc/dwin.h

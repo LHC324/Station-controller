@@ -8,15 +8,16 @@
 #include "spi.h"
 #include "dac.h"
 #include "usart.h"
+#include "shell_port.h"
 
 /*定义DAC输出对象*/
 // Dac_Obj dac_object;
 
 float gDac_OutPrarm[4U][2U] = {
-	{200.61237F, -1.50459F},
-	{199.14890F, 10.45532F},
-	{204.49438F, -19.42697F},
-	{202.72280F, -20.27230F},
+	{202.3956F, 4.585381F},
+	{203.08832F, -1.29154F},
+	{190.0288F, -19.1239F},
+	{189.398281F, -16.8367F},
 };
 
 /**
@@ -80,6 +81,9 @@ void Output_Current(Dac_Obj *p_ch, float data)
 	/*浮点数电流值转换为uint16_t*/
 	uint16_t value = (uint16_t)(gDac_OutPrarm[p_ch->Channel][0] * data + gDac_OutPrarm[p_ch->Channel][1]);
 
-	value = data ? ((data >= 20.0F) ? 0xFFFF : value) : 0U;
+	value = data ? ((data >= 20.0F) ? 0x0FFF : value) : 0U;
+#if defined(USING_DEBUG)
+	// shellPrint(Shell_Object, "Value[%p] = %d.\r\n", p_ch, value);
+#endif
 	Mcp48xx_Write(p_ch, value);
 }
