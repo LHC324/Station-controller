@@ -3,9 +3,9 @@
 <title>Static Call Graph - [STM32F103_BootLoader\STM32F103_BootLoader.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image STM32F103_BootLoader\STM32F103_BootLoader.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Sun May 15 16:02:23 2022
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Sun May 15 18:00:00 2022
 <BR><P>
-<H3>Maximum Stack Usage =        240 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
+<H3>Maximum Stack Usage =        208 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
 __rt_entry_main &rArr; main &rArr; Main_Menu &rArr; SerialDownload &rArr; Ymodem_Receive &rArr; ReceivePacket &rArr; HAL_UART_Receive &rArr; UART_WaitOnFlagUntilTimeout
 <P>
@@ -216,7 +216,7 @@ Global Symbols
 <P><STRONG><a name="[c8]"></a>__rt_entry_postsh_1</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$00000009))
 
 <P><STRONG><a name="[54]"></a>__rt_entry_main</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$0000000D))
-<BR><BR>[Stack]<UL><LI>Max Depth = 240 + Unknown Stack Size
+<BR><BR>[Stack]<UL><LI>Max Depth = 208 + Unknown Stack Size
 <LI>Call Chain = __rt_entry_main &rArr; main &rArr; Main_Menu &rArr; SerialDownload &rArr; Ymodem_Receive &rArr; ReceivePacket &rArr; HAL_UART_Receive &rArr; UART_WaitOnFlagUntilTimeout
 </UL>
 <BR>[Calls]<UL><LI><a href="#[55]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
@@ -909,7 +909,7 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[96]"></a>Main_Menu</STRONG> (Thumb, 278 bytes, Stack size 8 bytes, menu.o(i.Main_Menu))
-<BR><BR>[Stack]<UL><LI>Max Depth = 240<LI>Call Chain = Main_Menu &rArr; SerialDownload &rArr; Ymodem_Receive &rArr; ReceivePacket &rArr; HAL_UART_Receive &rArr; UART_WaitOnFlagUntilTimeout
+<BR><BR>[Stack]<UL><LI>Max Depth = 208<LI>Call Chain = Main_Menu &rArr; SerialDownload &rArr; Ymodem_Receive &rArr; ReceivePacket &rArr; HAL_UART_Receive &rArr; UART_WaitOnFlagUntilTimeout
 </UL>
 <BR>[Calls]<UL><LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_MspDeInit
 <LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Serial_PutString
@@ -948,7 +948,7 @@ Global Symbols
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f103xe.o(RESET)
 </UL>
 <P><STRONG><a name="[99]"></a>SerialDownload</STRONG> (Thumb, 222 bytes, Stack size 32 bytes, menu.o(i.SerialDownload))
-<BR><BR>[Stack]<UL><LI>Max Depth = 232<LI>Call Chain = SerialDownload &rArr; Ymodem_Receive &rArr; ReceivePacket &rArr; HAL_UART_Receive &rArr; UART_WaitOnFlagUntilTimeout
+<BR><BR>[Stack]<UL><LI>Max Depth = 200<LI>Call Chain = SerialDownload &rArr; Ymodem_Receive &rArr; ReceivePacket &rArr; HAL_UART_Receive &rArr; UART_WaitOnFlagUntilTimeout
 </UL>
 <BR>[Calls]<UL><LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_MspDeInit
 <LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Serial_PutString
@@ -1031,8 +1031,8 @@ Global Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f103xe.o(RESET)
 </UL>
-<P><STRONG><a name="[9d]"></a>Ymodem_Receive</STRONG> (Thumb, 398 bytes, Stack size 104 bytes, ymodem.o(i.Ymodem_Receive))
-<BR><BR>[Stack]<UL><LI>Max Depth = 200<LI>Call Chain = Ymodem_Receive &rArr; ReceivePacket &rArr; HAL_UART_Receive &rArr; UART_WaitOnFlagUntilTimeout
+<P><STRONG><a name="[9d]"></a>Ymodem_Receive</STRONG> (Thumb, 422 bytes, Stack size 72 bytes, ymodem.o(i.Ymodem_Receive))
+<BR><BR>[Stack]<UL><LI>Max Depth = 168<LI>Call Chain = Ymodem_Receive &rArr; ReceivePacket &rArr; HAL_UART_Receive &rArr; UART_WaitOnFlagUntilTimeout
 </UL>
 <BR>[Calls]<UL><LI><a href="#[6b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_If_Write
 <LI><a href="#[64]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_If_Erase
@@ -1060,7 +1060,7 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[55]"></a>main</STRONG> (Thumb, 250 bytes, Stack size 0 bytes, main.o(i.main))
-<BR><BR>[Stack]<UL><LI>Max Depth = 240<LI>Call Chain = main &rArr; Main_Menu &rArr; SerialDownload &rArr; Ymodem_Receive &rArr; ReceivePacket &rArr; HAL_UART_Receive &rArr; UART_WaitOnFlagUntilTimeout
+<BR><BR>[Stack]<UL><LI>Max Depth = 208<LI>Call Chain = main &rArr; Main_Menu &rArr; SerialDownload &rArr; Ymodem_Receive &rArr; ReceivePacket &rArr; HAL_UART_Receive &rArr; UART_WaitOnFlagUntilTimeout
 </UL>
 <BR>[Calls]<UL><LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Serial_PutString
 <LI><a href="#[96]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Main_Menu

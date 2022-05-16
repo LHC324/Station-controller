@@ -898,18 +898,18 @@ Image Symbol Table
     Update_Percent                           0x08001f5d   Thumb Code    42  ymodem.o(i.Update_Percent)
     i.UsageFault_Handler                     0x08001f86   Section        0  stm32f1xx_it.o(i.UsageFault_Handler)
     i.Ymodem_Receive                         0x08001f88   Section        0  ymodem.o(i.Ymodem_Receive)
-    i.Ymodem_Transmit                        0x08002128   Section        0  ymodem.o(i.Ymodem_Transmit)
-    i.__NVIC_SetPriority                     0x080023f8   Section        0  stm32f1xx_hal_cortex.o(i.__NVIC_SetPriority)
-    __NVIC_SetPriority                       0x080023f9   Thumb Code    32  stm32f1xx_hal_cortex.o(i.__NVIC_SetPriority)
-    i.__NVIC_SystemReset                     0x08002418   Section        0  menu.o(i.__NVIC_SystemReset)
-    __NVIC_SystemReset                       0x08002419   Thumb Code    26  menu.o(i.__NVIC_SystemReset)
-    i.main                                   0x0800243c   Section        0  main.o(i.main)
-    .constdata                               0x080025f8   Section       16  system_stm32f1xx.o(.constdata)
-    .constdata                               0x08002608   Section        8  system_stm32f1xx.o(.constdata)
-    .constdata                               0x08002610   Section       12  menu.o(.constdata)
-    .constdata                               0x0800261c   Section       10  ymodem.o(.constdata)
-    .conststring                             0x08002628   Section      148  main.o(.conststring)
-    .conststring                             0x080026bc   Section     1673  menu.o(.conststring)
+    i.Ymodem_Transmit                        0x08002140   Section        0  ymodem.o(i.Ymodem_Transmit)
+    i.__NVIC_SetPriority                     0x08002410   Section        0  stm32f1xx_hal_cortex.o(i.__NVIC_SetPriority)
+    __NVIC_SetPriority                       0x08002411   Thumb Code    32  stm32f1xx_hal_cortex.o(i.__NVIC_SetPriority)
+    i.__NVIC_SystemReset                     0x08002430   Section        0  menu.o(i.__NVIC_SystemReset)
+    __NVIC_SystemReset                       0x08002431   Thumb Code    26  menu.o(i.__NVIC_SystemReset)
+    i.main                                   0x08002454   Section        0  main.o(i.main)
+    .constdata                               0x08002610   Section       16  system_stm32f1xx.o(.constdata)
+    .constdata                               0x08002620   Section        8  system_stm32f1xx.o(.constdata)
+    .constdata                               0x08002628   Section       12  menu.o(.constdata)
+    .constdata                               0x08002634   Section       10  ymodem.o(.constdata)
+    .conststring                             0x08002640   Section      148  main.o(.conststring)
+    .conststring                             0x080026d4   Section     1673  menu.o(.conststring)
     .data                                    0x20000000   Section        8  main.o(.data)
     .data                                    0x20000008   Section       12  stm32f1xx_hal.o(.data)
     .data                                    0x20000014   Section        4  system_stm32f1xx.o(.data)
@@ -1159,13 +1159,13 @@ Image Symbol Table
     SystemInit                               0x08001e1f   Thumb Code     2  system_stm32f1xx.o(i.SystemInit)
     UpdateCRC16                              0x08001f3d   Thumb Code    32  ymodem.o(i.UpdateCRC16)
     UsageFault_Handler                       0x08001f87   Thumb Code     2  stm32f1xx_it.o(i.UsageFault_Handler)
-    Ymodem_Receive                           0x08001f89   Thumb Code   398  ymodem.o(i.Ymodem_Receive)
-    Ymodem_Transmit                          0x08002129   Thumb Code   710  ymodem.o(i.Ymodem_Transmit)
-    main                                     0x0800243d   Thumb Code   250  main.o(i.main)
-    AHBPrescTable                            0x080025f8   Data          16  system_stm32f1xx.o(.constdata)
-    APBPrescTable                            0x08002608   Data           8  system_stm32f1xx.o(.constdata)
-    Region$$Table$$Base                      0x08002d48   Number         0  anon$$obj.o(Region$$Table)
-    Region$$Table$$Limit                     0x08002d68   Number         0  anon$$obj.o(Region$$Table)
+    Ymodem_Receive                           0x08001f89   Thumb Code   422  ymodem.o(i.Ymodem_Receive)
+    Ymodem_Transmit                          0x08002141   Thumb Code   710  ymodem.o(i.Ymodem_Transmit)
+    main                                     0x08002455   Thumb Code   250  main.o(i.main)
+    AHBPrescTable                            0x08002610   Data          16  system_stm32f1xx.o(.constdata)
+    APBPrescTable                            0x08002620   Data           8  system_stm32f1xx.o(.constdata)
+    Region$$Table$$Base                      0x08002d60   Number         0  anon$$obj.o(Region$$Table)
+    Region$$Table$$Limit                     0x08002d80   Number         0  anon$$obj.o(Region$$Table)
     gJump_ApplicationAddr                    0x20000000   Data           4  main.o(.data)
     gUpdate_flag                             0x20000004   Data           4  main.o(.data)
     uwTickFreq                               0x20000008   Data           1  stm32f1xx_hal.o(.data)
@@ -1191,9 +1191,9 @@ Memory Map of the image
 
   Image Entry point : 0x08000131
 
-  Load Region LR_IROM1 (Base: 0x08000000, Size: 0x00002de4, Max: 0x00005000, ABSOLUTE)
+  Load Region LR_IROM1 (Base: 0x08000000, Size: 0x00002dfc, Max: 0x00005000, ABSOLUTE)
 
-    Execution Region ER_IROM1 (Exec base: 0x08000000, Load base: 0x08000000, Size: 0x00002d68, Max: 0x00005000, ABSOLUTE)
+    Execution Region ER_IROM1 (Exec base: 0x08000000, Load base: 0x08000000, Size: 0x00002d80, Max: 0x00005000, ABSOLUTE)
 
     Exec Addr    Load Addr    Size         Type   Attr      Idx    E Section Name        Object
 
@@ -1340,38 +1340,38 @@ Memory Map of the image
     0x08001f3c   0x08001f3c   0x00000020   Code   RO         2019    i.UpdateCRC16       ymodem.o
     0x08001f5c   0x08001f5c   0x0000002a   Code   RO         2020    i.Update_Percent    ymodem.o
     0x08001f86   0x08001f86   0x00000002   Code   RO          242    i.UsageFault_Handler  stm32f1xx_it.o
-    0x08001f88   0x08001f88   0x000001a0   Code   RO         2021    i.Ymodem_Receive    ymodem.o
-    0x08002128   0x08002128   0x000002d0   Code   RO         2022    i.Ymodem_Transmit   ymodem.o
-    0x080023f8   0x080023f8   0x00000020   Code   RO         1250    i.__NVIC_SetPriority  stm32f1xx_hal_cortex.o
-    0x08002418   0x08002418   0x00000024   Code   RO         1869    i.__NVIC_SystemReset  menu.o
-    0x0800243c   0x0800243c   0x000001bc   Code   RO           15    i.main              main.o
-    0x080025f8   0x080025f8   0x00000010   Data   RO         1739    .constdata          system_stm32f1xx.o
-    0x08002608   0x08002608   0x00000008   Data   RO         1740    .constdata          system_stm32f1xx.o
-    0x08002610   0x08002610   0x0000000c   Data   RO         1871    .constdata          menu.o
-    0x0800261c   0x0800261c   0x0000000a   Data   RO         2024    .constdata          ymodem.o
-    0x08002626   0x08002626   0x00000002   PAD
-    0x08002628   0x08002628   0x00000094   Data   RO           16    .conststring        main.o
-    0x080026bc   0x080026bc   0x00000689   Data   RO         1872    .conststring        menu.o
-    0x08002d45   0x08002d45   0x00000003   PAD
-    0x08002d48   0x08002d48   0x00000020   Data   RO         2259    Region$$Table       anon$$obj.o
+    0x08001f88   0x08001f88   0x000001b8   Code   RO         2021    i.Ymodem_Receive    ymodem.o
+    0x08002140   0x08002140   0x000002d0   Code   RO         2022    i.Ymodem_Transmit   ymodem.o
+    0x08002410   0x08002410   0x00000020   Code   RO         1250    i.__NVIC_SetPriority  stm32f1xx_hal_cortex.o
+    0x08002430   0x08002430   0x00000024   Code   RO         1869    i.__NVIC_SystemReset  menu.o
+    0x08002454   0x08002454   0x000001bc   Code   RO           15    i.main              main.o
+    0x08002610   0x08002610   0x00000010   Data   RO         1739    .constdata          system_stm32f1xx.o
+    0x08002620   0x08002620   0x00000008   Data   RO         1740    .constdata          system_stm32f1xx.o
+    0x08002628   0x08002628   0x0000000c   Data   RO         1871    .constdata          menu.o
+    0x08002634   0x08002634   0x0000000a   Data   RO         2024    .constdata          ymodem.o
+    0x0800263e   0x0800263e   0x00000002   PAD
+    0x08002640   0x08002640   0x00000094   Data   RO           16    .conststring        main.o
+    0x080026d4   0x080026d4   0x00000689   Data   RO         1872    .conststring        menu.o
+    0x08002d5d   0x08002d5d   0x00000003   PAD
+    0x08002d60   0x08002d60   0x00000020   Data   RO         2259    Region$$Table       anon$$obj.o
 
 
-    Execution Region RW_IRAM1 (Exec base: 0x20000000, Load base: 0x08002d68, Size: 0x00000bd0, Max: 0x00010000, ABSOLUTE)
+    Execution Region RW_IRAM1 (Exec base: 0x20000000, Load base: 0x08002d80, Size: 0x00000bd0, Max: 0x00010000, ABSOLUTE)
 
     Exec Addr    Load Addr    Size         Type   Attr      Idx    E Section Name        Object
 
-    0x20000000   0x08002d68   0x00000008   Data   RW           17    .data               main.o
-    0x20000008   0x08002d70   0x0000000c   Data   RW          787    .data               stm32f1xx_hal.o
-    0x20000014   0x08002d7c   0x00000004   Data   RW         1741    .data               system_stm32f1xx.o
-    0x20000018   0x08002d80   0x0000005c   Data   RW         1873    .data               menu.o
-    0x20000074   0x08002ddc   0x00000004   Data   RW         1874    .data               menu.o
-    0x20000078   0x08002de0   0x00000004   Data   RW         1875    .data               menu.o
+    0x20000000   0x08002d80   0x00000008   Data   RW           17    .data               main.o
+    0x20000008   0x08002d88   0x0000000c   Data   RW          787    .data               stm32f1xx_hal.o
+    0x20000014   0x08002d94   0x00000004   Data   RW         1741    .data               system_stm32f1xx.o
+    0x20000018   0x08002d98   0x0000005c   Data   RW         1873    .data               menu.o
+    0x20000074   0x08002df4   0x00000004   Data   RW         1874    .data               menu.o
+    0x20000078   0x08002df8   0x00000004   Data   RW         1875    .data               menu.o
     0x2000007c        -       0x00000088   Zero   RW          190    .bss                usart.o
-    0x20000104   0x08002de4   0x00000004   PAD
+    0x20000104   0x08002dfc   0x00000004   PAD
     0x20000108        -       0x00000020   Zero   RW         1491    .bss                stm32f1xx_hal_flash.o
     0x20000128        -       0x00000040   Zero   RW         1870    .bss                menu.o
     0x20000168        -       0x00000406   Zero   RW         2023    .bss                ymodem.o
-    0x2000056e   0x08002de4   0x00000002   PAD
+    0x2000056e   0x08002dfc   0x00000002   PAD
     0x20000570        -       0x00000060   Zero   RW         2133    .bss                c_w.l(libspace.o)
     0x200005d0        -       0x00000200   Zero   RW            2    HEAP                startup_stm32f103xe.o
     0x200007d0        -       0x00000400   Zero   RW            1    STACK               startup_stm32f103xe.o
@@ -1401,10 +1401,10 @@ Image component sizes
         20          0          0          0          0       4082   stm32f1xx_it.o
          2          0         24          4          0       1191   system_stm32f1xx.o
        372         58          0          0        136       3008   usart.o
-      1568         42         10          0       1030       9198   ymodem.o
+      1592         42         10          0       1030       9498   ymodem.o
 
     ----------------------------------------------------------------------
-      9022       1004       2208        124       2804    1011838   Object Totals
+      9046       1004       2208        124       2804    1012138   Object Totals
          0          0         32          0          0          0   (incl. Generated)
         12          0          5          0          6          0   (incl. Padding)
 
@@ -1455,15 +1455,15 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-      9416       1020       2208        124       2900    1008250   Grand Totals
-      9416       1020       2208        124       2900    1008250   ELF Image Totals
-      9416       1020       2208        124          0          0   ROM Totals
+      9440       1020       2208        124       2900    1008550   Grand Totals
+      9440       1020       2208        124       2900    1008550   ELF Image Totals
+      9440       1020       2208        124          0          0   ROM Totals
 
 ==============================================================================
 
-    Total RO  Size (Code + RO Data)                11624 (  11.35kB)
+    Total RO  Size (Code + RO Data)                11648 (  11.38kB)
     Total RW  Size (RW Data + ZI Data)              3024 (   2.95kB)
-    Total ROM Size (Code + RO Data + RW Data)      11748 (  11.47kB)
+    Total ROM Size (Code + RO Data + RW Data)      11772 (  11.50kB)
 
 ==============================================================================
 

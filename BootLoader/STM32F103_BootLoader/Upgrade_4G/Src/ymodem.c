@@ -353,7 +353,8 @@ uint8_t CalcChecksum(const uint8_t *p_data, uint32_t size)
  */
 COM_StatusTypeDef Ymodem_Receive(uint32_t *p_size)
 {
-  uint32_t i, packet_length, session_done = 0, file_done, errors = 0, session_begin = 0;
+#define C_MAX 50U
+  uint32_t i, packet_length, session_done = 0, file_done, errors = 0, session_begin = 0, c_count = 0;
   uint32_t flashdestination, ramsource, filesize;
   uint8_t *file_ptr;
   uint8_t file_size[FILE_SIZE_LENGTH], tmp, packets_received;
@@ -371,7 +372,7 @@ COM_StatusTypeDef Ymodem_Receive(uint32_t *p_size)
       switch (ReceivePacket(aPacketData, &packet_length, DOWNLOAD_TIMEOUT))
       {
       case HAL_OK:
-        errors = 0;
+        errors = c_count = 0;
         //	    result = COM_OK;
         switch (packet_length)
         {
@@ -490,7 +491,15 @@ COM_StatusTypeDef Ymodem_Receive(uint32_t *p_size)
         }
         else
         {
-          Serial_PutByte(CRC16); /* Ask for a packet */
+          if (++c_count < C_MAX)
+          {
+            Serial_PutByte(CRC16); /* Ask for a packet */
+          }
+          else
+          {
+            c_count = 0;
+            result = COM_ERROR;
+          }
         }
         break;
       }
