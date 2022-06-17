@@ -24,8 +24,6 @@ station_controller\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma
 station_controller\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h
 station_controller\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc.h
 station_controller\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc_ex.h
-station_controller\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dac.h
-station_controller\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dac_ex.h
 station_controller\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h
 station_controller\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h
 station_controller\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
@@ -53,7 +51,6 @@ station_controller\main.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/qu
 station_controller\main.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h
 station_controller\main.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h
 station_controller\main.o: ../Core/Inc/adc.h
-station_controller\main.o: ../Core/Inc/dac.h
 station_controller\main.o: ../Core/Inc/dma.h
 station_controller\main.o: ../Core/Inc/spi.h
 station_controller\main.o: ../Core/Inc/usart.h

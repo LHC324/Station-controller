@@ -27,8 +27,8 @@
 Dac_Obj dac_object_group[EXTERN_ANALOGOUT_MAX] = {
     {.Channel = DAC_OUT1, .Mcpxx_Id = Input_A},
     {.Channel = DAC_OUT2, .Mcpxx_Id = Input_B},
-    {.Channel = DAC_OUT3, .Mcpxx_Id = Input_Other},
-    {.Channel = DAC_OUT4, .Mcpxx_Id = Input_Other},
+    {.Channel = DAC_OUT3, .Mcpxx_Id = Input_A},
+    {.Channel = DAC_OUT4, .Mcpxx_Id = Input_B},
 };
 
 /**
@@ -107,9 +107,11 @@ void Write_Digital_IO(void)
  */
 void Read_Analog_Io(void)
 {
-#define CP 0.005378F
-#define CQ 0.375224F
-#define P (3.0F / 2.0F)
+// #define CP 0.005378F
+// #define CQ 0.375224F
+// #define P (3.0F / 2.0F)
+#define CP 0.009181715F
+#define CQ -0.083191654F
     mdSTATUS ret = mdFALSE;
     uint16_t tch = 0;
     static bool first_flag = false;
@@ -188,8 +190,11 @@ void Read_Analog_Io(void)
     for (uint16_t ch = 0; ch < ADC_DMA_CHANNEL; ch++)
     { /*获取DAC值*/
         tch = Get_ADC_Channel(ch, 4U, ADC_DMA_CHANNEL);
-        pdata[ch] = (CP * Get_AdcValue(tch) + CQ) * P;
-        pdata[ch] = (pdata[ch] <= (CQ * P)) ? 0 : pdata[ch];
+#if defined(USING_DEBUG)
+        // shellPrint(Shell_Object, "R_AD[%d]_Value = %d\r\n", ch, Get_AdcValue(tch));
+#endif
+        pdata[ch] = (CP * Get_AdcValue(tch) + CQ);
+        pdata[ch] = (pdata[ch] <= CQ) ? 0 : pdata[ch];
         /*滤波处理*/
 #if defined(KALMAN)
         pdata[ch] = kalmanFilter(&pkfp[ch], pdata[ch]);

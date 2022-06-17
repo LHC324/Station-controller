@@ -24,8 +24,7 @@
 #define __MAIN_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
@@ -137,12 +136,12 @@ extern "C"
   } Soft_Timer_HandleTypeDef;
 
   extern Save_HandleTypeDef Save_Flash;
-  /* USER CODE END EM */
+/* USER CODE END EM */
 
-  /* Exported functions prototypes ---------------------------------------------*/
-  void Error_Handler(void);
+/* Exported functions prototypes ---------------------------------------------*/
+void Error_Handler(void);
 
-  /* USER CODE BEGIN EFP */
+/* USER CODE BEGIN EFP */
   extern void Param_WriteBack(Save_HandleTypeDef *ps);
 /* USER CODE END EFP */
 
@@ -195,15 +194,19 @@ extern "C"
 #define RX_DWEN_GPIO_Port GPIOA
 #define SPI1_CS_Pin GPIO_PIN_15
 #define SPI1_CS_GPIO_Port GPIOA
+#define CS0_Pin GPIO_PIN_10
+#define CS0_GPIO_Port GPIOC
+#define CS1_Pin GPIO_PIN_11
+#define CS1_GPIO_Port GPIOC
 #define WDI_Pin GPIO_PIN_2
 #define WDI_GPIO_Port GPIOD
 #define RS4850TX_Pin GPIO_PIN_5
 #define RS4850TX_GPIO_Port GPIOD
 #define RS4850RX_Pin GPIO_PIN_6
 #define RS4850RX_GPIO_Port GPIOD
-  /* USER CODE BEGIN Private defines */
+/* USER CODE BEGIN Private defines */
 
-  /* USER CODE END Private defines */
+/* USER CODE END Private defines */
 
 #ifdef __cplusplus
 }

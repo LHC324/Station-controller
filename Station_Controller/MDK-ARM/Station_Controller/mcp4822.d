@@ -26,8 +26,6 @@ station_controller\mcp4822.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_
 station_controller\mcp4822.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h
 station_controller\mcp4822.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc.h
 station_controller\mcp4822.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc_ex.h
-station_controller\mcp4822.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dac.h
-station_controller\mcp4822.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dac_ex.h
 station_controller\mcp4822.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h
 station_controller\mcp4822.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h
 station_controller\mcp4822.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
@@ -40,7 +38,6 @@ station_controller\mcp4822.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 station_controller\mcp4822.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 station_controller\mcp4822.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 station_controller\mcp4822.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdarg.h
-station_controller\mcp4822.o: ../Core/Inc/dac.h
 station_controller\mcp4822.o: ../Core/Inc/usart.h
 station_controller\mcp4822.o: ../Letter_Shell/Inc/shell_port.h
 station_controller\mcp4822.o: ../Letter_Shell/Inc/shell.h

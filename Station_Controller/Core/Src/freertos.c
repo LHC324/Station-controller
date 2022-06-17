@@ -676,7 +676,7 @@ void Contrl_Task(void const *argument)
     }
     /*Safe operation guarantee*/
 #define SAFETY
-    { /*V1在开始�?�停机模式只有打�???，没有关闭！！！*/
+    { /*V1在开始�?�停机模式只有打�????，没有关闭！！！*/
       if ((ps->User.Ptank <= ps->Param.Ptank_limit) || (ps->User.Ltank <= ps->Param.Ltank_limit) || (ps->Param.Error_Code))
       {
         /*close V1、V2、V3*/
@@ -1029,7 +1029,7 @@ void MdTimer(void const *argument)
   {
     return;
   }
-  /*考虑加互斥锁：在update�????????46指令*/
+  /*考虑加互斥锁：在update�?????????46指令*/
   // mdRTU_46H(pMd->slaveId, 0x00, 0x00, 0x00, NULL);
   //  pMd->mdRTU_46H(pMd, 0x00, 0x00, 0x00, NULL);
 

@@ -32,8 +32,6 @@ station_controller\mdrtuslave.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_h
 station_controller\mdrtuslave.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h
 station_controller\mdrtuslave.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc.h
 station_controller\mdrtuslave.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc_ex.h
-station_controller\mdrtuslave.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dac.h
-station_controller\mdrtuslave.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dac_ex.h
 station_controller\mdrtuslave.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h
 station_controller\mdrtuslave.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h
 station_controller\mdrtuslave.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h

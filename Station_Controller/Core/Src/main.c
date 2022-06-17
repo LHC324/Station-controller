@@ -21,7 +21,6 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "adc.h"
-#include "dac.h"
 #include "dma.h"
 #include "spi.h"
 #include "usart.h"
@@ -101,9 +100,9 @@ void MX_FREERTOS_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 /**
- * @brief	后台设置参数写会modbus保持寄存�?
+ * @brief	后台设置参数写会modbus保持寄存�??
  * @details
- * @param	ps 指向第一个后台参数地�?
+ * @param	ps 指向第一个后台参数地�??
  * @retval	None
  */
 void Param_WriteBack(Save_HandleTypeDef *ps)
@@ -172,7 +171,6 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART3_UART_Init();
   MX_ADC1_Init();
-  MX_DAC_Init();
   MX_SPI1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
@@ -227,9 +225,6 @@ int main(void)
   /*Solve the problem that the background data cannot be received due to the unstable power supply when the Devon screen is turned on*/
   HAL_Delay(2000);
   Report_Backparam(Dwin_Object, &ps->Param);
-  /*Turn on the DAC*/
-  HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
-  HAL_DAC_Start(&hdac, DAC_CHANNEL_2);
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */
