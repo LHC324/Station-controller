@@ -68,6 +68,7 @@ extern "C"
     extern Dac_Obj dac_object;
     extern void Mcp48xx_Write(Dac_Obj *p_ch, unsigned short data);
     extern void Output_Current(Dac_Obj *p_ch, float data);
+    extern void Coutput_Current(Dac_Obj *p_ch, unsigned int data);
 
 #ifdef __cplusplus
 }

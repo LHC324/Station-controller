@@ -363,6 +363,7 @@ static void shellWritePrompt(Shell *shell, unsigned char newline)
  */
 void shellPrint(Shell *shell, char *fmt, ...)
 {
+    shell->lock(shell);
 #if defined(USING_RTOS)
     char *buffer = (char *)pvPortMalloc(SHELL_PRINT_BUFFER);
 #else
@@ -381,6 +382,7 @@ void shellPrint(Shell *shell, char *fmt, ...)
 #if defined(USING_RTOS)
     vPortFree(buffer);
 #endif
+    shell->unlock(shell);
 }
 #endif
 
@@ -1747,15 +1749,15 @@ void shellTask(void *param)
     while (1)
     {
 #endif
-        if (shell->read && shell->read(&data, 1) == 1)
+        if (shell->read && shell->read(&data, 1))
         {
             shellHandler(shell, data);
         }
 #if SHELL_TASK_WHILE == 1
 #if defined(USING_RTTHREAD)
-        rt_thread_mdelay(10);
+        rt_thread_mdelay(1);
 #else
-        osDelay(10);
+        osDelay(1);
 #endif
     }
 #endif

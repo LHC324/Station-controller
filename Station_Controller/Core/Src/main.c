@@ -71,6 +71,18 @@ Save_Param Save_InitPara = {
     .PSvap_outlet_stop = 1.1F,
     .User_Name = 0x07E6,
     .User_Code = 0x0522,
+    .System_Version = SYSTEM_VERSION(),
+    .System_Flag = 0xFFFFFFFF,
+    .Adc = {
+        .Cp = 0.009052399F,
+        .Cq = 0.588793299F,
+    },
+    .Dac = {.Dac = {
+                {202.3956F, 4.585381F},
+                {203.08832F, -1.29154F},
+                {190.0288F, -19.1239F},
+                {189.398281F, -16.8367F},
+            }},
     .Error_Code = 0x0000,
     // .Update = 0xFFFFFFFF,
 };
@@ -108,34 +120,17 @@ void MX_FREERTOS_Init(void);
  */
 void Param_WriteBack(Save_HandleTypeDef *ps)
 {
-  uint16_t len = sizeof(Save_Param) - sizeof(uint32_t) - sizeof(ps->Param.crc16);
+  ps->Param.System_Flag = (*(__IO uint32_t *)UPDATE_SAVE_ADDRESS);
+  ps->Param.System_Version = SYSTEM_VERSION();
   /*Parameters are written to the mdbus hold register*/
-  float *pdata = (float *)CUSTOM_MALLOC(len);
-  if (pdata && ps)
+  mdSTATUS ret = mdRTU_WriteHoldRegs(Slave1_Object, PARAM_MD_ADDR, GET_PARAM_SITE(Save_Param, Adc, uint16_t),
+                                     (mdU16 *)&ps->Param);
+  if (ret == mdFALSE)
   {
-    memset(pdata, 0x00, len);
-    memcpy(pdata, &ps->Param, len);
-    for (uint8_t i = 0; i < len / sizeof(float); i++)
-    {
-      Endian_Swap((uint8_t *)&pdata[i], 0U, sizeof(float));
-    }
-    mdSTATUS ret = mdRTU_WriteHoldRegs(Slave1_Object, PARAM_MD_ADDR, len, (mdU16 *)pdata);
-    /*Write user name and password*/
-    ret = mdRTU_WriteHoldRegs(Slave1_Object, MDUSER_NAME_ADDR, 2U, (mdU16 *)&ps->Param.User_Name);
-    mdU16 temp_data[2U] = {(mdU16)CURRENT_SOFT_VERSION, (mdU16)((uint32_t)((*(__IO uint32_t *)UPDATE_SAVE_ADDRESS) >> 16U))};
 #if defined(USING_DEBUG)
-    shellPrint(Shell_Object, "version:%d, flag:%d.\r\n", temp_data[0], temp_data[1]);
+    shellPrint(Shell_Object, "Parameter write to hold register failed!\r\n");
 #endif
-    /*Write software version number and status*/
-    ret = mdRTU_WriteHoldRegs(Slave1_Object, SOFT_VERSION_ADDR, 2U, temp_data);
-    if (ret == mdFALSE)
-    {
-#if defined(USING_DEBUG)
-      shellPrint(Shell_Object, "Parameter write to hold register failed!\r\n");
-#endif
-    }
   }
-  CUSTOM_FREE(pdata);
 }
 /* USER CODE END 0 */
 
@@ -207,18 +202,26 @@ int main(void)
   }
   if (Slave1_Object)
   {
+    /*Idle interrupt*/
+    __HAL_UART_ENABLE_IT(&huart3, UART_IT_IDLE);
     /*DMA buffer must point to an entity address!!!*/
     HAL_UART_Receive_DMA(&huart3, mdRTU_Recive_Buf(Slave1_Object), MODBUS_PDU_SIZE_MAX);
     /*Parameters are written to the mdbus hold register*/
     Param_WriteBack(ps);
   }
+#if !defined(USING_SHELL)
   if (Slave2_Object)
   {
+    /*Idle interrupt*/
+    __HAL_UART_ENABLE_IT(&huart2, UART_IT_IDLE);
     /*DMA buffer must point to an entity address!!!*/
     HAL_UART_Receive_DMA(&huart2, mdRTU_Recive_Buf(Slave2_Object), MODBUS_PDU_SIZE_MAX);
   }
+#endif
   if (Dwin_Object)
   {
+    /*Idle interrupt*/
+    __HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
     /*DMA buffer must point to an entity address!!!*/
     HAL_UART_Receive_DMA(&huart1, Dwin_Recive_Buf(Dwin_Object), Dwin_Rx_Size(Dwin_Object));
   }

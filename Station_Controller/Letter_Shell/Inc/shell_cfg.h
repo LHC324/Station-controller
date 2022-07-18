@@ -169,7 +169,7 @@
  * @brief shell默认用户密码
  *        若默认用户不需要密码，设为""
  */
-#define     SHELL_DEFAULT_USER_PASSWORD ""
+#define     SHELL_DEFAULT_USER_PASSWORD "1314"
 
 /**
  * @brief shell自动锁定超时
@@ -177,6 +177,6 @@
  *        设置为0时关闭自动锁定功能，时间单位为`SHELL_GET_TICK()`单位
  * @note 使用超时锁定必须保证`SHELL_GET_TICK()`有效
  */
-#define     SHELL_LOCK_TIMEOUT          0 * 60 * 1000
+#define     SHELL_LOCK_TIMEOUT          5 * 60 * 1000
 
 #endif

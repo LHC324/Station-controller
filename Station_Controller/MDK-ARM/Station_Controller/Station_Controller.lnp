@@ -15,6 +15,7 @@
 "station_controller\stm32f1xx_hal_msp.o"
 "station_controller\stm32f1xx_hal_timebase_tim.o"
 "station_controller\lte.o"
+"station_controller\clibration.o"
 "station_controller\dwin.o"
 "station_controller\tool.o"
 "station_controller\mdcrc16.o"

@@ -1,5 +1,6 @@
 #include "lte.h"
 #include "usart.h"
+#include "mdrtuslave.h"
 #include "shell_port.h"
 #if defined(USING_FREERTOS)
 #include "cmsis_os.h"
@@ -8,6 +9,8 @@
 /*定义AT模块对象*/
 pAtHandle At_Object;
 
+extern osTimerId reportHandle;
+extern osTimerId mdtimerHandle;
 /*局部函数申明*/
 static void Free_AtObject(pAtHandle *pa);
 static void At_SetPin(pAtHandle pa, Gpiox_info *pgpio, GPIO_PinState PinState);
@@ -19,8 +22,7 @@ AT_Command Lte[] = {
 
 	{"+++", "a", Get_Ms(2)},
 	{"a", "+ok", Get_Ms(2)},
-	// {"AT+E=OFF\r\n", "OK", Get_Ms(0.2F)},
-
+	{"AT+E=OFF\r\n", "OK", Get_Ms(0.2F)},
 	{"AT+HEARTDT=7777772E796E7061782E636F6D\r\n", "OK", Get_Ms(0.2F)},
 
 	{"AT+WKMOD=NET\r\n", "OK", Get_Ms(0.2F)},
@@ -60,6 +62,8 @@ static void Creat_AtObject(pAtHandle *pa, pAtHandle ps)
 	shellPrint(Shell_Object, "At[%d]_handler = 0x%p\r\n", ps->Id, *pa);
 #endif
 	(*pa)->Id = ps->Id;
+	(*pa)->huart = ps->huart;
+	(*pa)->pHandle = ps->pHandle;
 	(*pa)->Table = ps->Table;
 	(*pa)->Gpio = ps->Gpio;
 	(*pa)->Free_AtObject = Free_AtObject;
@@ -104,6 +108,7 @@ void MX_AtInit(void)
 		.Gpio = gpio,
 		.Table = table,
 		.huart = &huart3,
+		.pHandle = Slave1_Object->receiveBuffer,
 	};
 	Creat_AtObject(&At_Object, &at);
 }
@@ -134,6 +139,10 @@ static void At_SetDefault(pAtHandle pa)
 		{
 			if (!pa->AT_ExeAppointCmd(pa, pat))
 			{
+				pat = pa->Table.pList + pa->Table.Comm_Num - 1U;
+				shellPrint(Shell_Object, "@Error:Module configuration failed.Module is restarting...\r\n");
+				/*执行一次重启指令：防止卡死在AT模式下*/
+				pa->AT_ExeAppointCmd(pa, pat);
 				break;
 			}
 		}
@@ -150,52 +159,87 @@ static bool At_ExeAppointCmd(pAtHandle pa, AT_Command *pat)
 {
 #define RETRY_COUNTS 3U
 #define AT_CMD_ERROR "ERR"
+	ReceiveBufferHandle pb = (ReceiveBufferHandle)pa->pHandle;
 	uint8_t counts = 0;
 	bool result = true;
-	if (pa && pat)
+	if (pa && pat && pb)
 	{
-		uint8_t rx_size = strlen(pat->pRecv);
-		uint8_t *prdata = (uint8_t *)CUSTOM_MALLOC(rx_size);
-		if (prdata && rx_size)
+		while (result)
 		{
-			while (result)
+			mdClearReceiveBuffer(pb);
+			HAL_UART_Transmit(pa->huart, (uint8_t *)pat->pSend, strlen(pat->pSend), pat->WaitTimes);
+			uint32_t timer = HAL_GetTick();
+
+			while (!pb->count)
 			{
-				HAL_UART_Transmit(pa->huart, (uint8_t *)pat->pSend, strlen(pat->pSend), pat->WaitTimes);
-				if (HAL_UART_Receive(pa->huart, prdata, rx_size, pa->Table.pList->WaitTimes) == HAL_OK)
+				if (GET_TIMEOUT_FLAG(timer, HAL_GetTick(), pa->Table.pList->WaitTimes, HAL_MAX_DELAY))
+					break;
+				// osDelay(1);
+			}
+			if (pb->count)
+			{
+				pb->buf[pb->count] = '\0';
+				if (strstr((const char *)&(pb->buf), (const char *)pat->pRecv) == NULL)
 				{
-					if (strstr((const char *)prdata, (const char *)pat->pSend) == NULL)
-					{
-						counts++;
-#if defined(USING_DEBUG)
-						shellPrint(Shell_Object, "Response instruction:%s and %s mismatch.\r\n",
-								   prdata, pat->pSend);
-#endif
-					}
-					else
-					{
-#if defined(USING_DEBUG)
-						shellPrint(Shell_Object, "Command sent successfully.\r\n");
-#endif
-						break;
-					}
+					counts++;
+					shellPrint(Shell_Object, "Send:%sResponse instruction:%s and %s mismatch.\r\n",
+							   pat->pSend, pb->buf, pat->pRecv);
 				}
 				else
 				{
-					counts++;
-#if defined(USING_DEBUG)
-					shellPrint(Shell_Object, "At module does not respond!\r\n");
-#endif
-				}
-				if (counts >= RETRY_COUNTS)
-				{
-					result = false;
-#if defined(USING_DEBUG)
-					shellPrint(Shell_Object, "Retransmission exceeds the maximum number of times!\r\n");
-#endif
+					shellPrint(Shell_Object, "Command:%ssent successfully,Recive:%s",
+							   pat->pSend, pb->buf);
+					break;
 				}
 			}
+			else
+			{
+				counts++;
+				shellPrint(Shell_Object, "At module does not respond!data:%s.\r\n", pb->buf);
+			}
+			if (counts >= RETRY_COUNTS)
+			{
+				result = false;
+				shellPrint(Shell_Object, "@Error:Retransmission exceeds the maximum number of times!\r\n");
+			}
 		}
-		CUSTOM_FREE(prdata);
+		return result;
 	}
-	return result;
 }
+
+/**
+ * @brief	配置AT模块参数
+ * @details
+ * @param	None
+ * @retval	None
+ */
+void At_Config(void)
+{
+	osTimerStop(reportHandle);
+	osTimerStop(mdtimerHandle);
+	osThreadSuspendAll();
+	MX_AtInit();
+
+	/*关闭4G模块空闲中断*/
+	// __HAL_UART_DISABLE_IT(At_Object->huart, UART_IT_IDLE);
+	// /*Stop DMA transmission to prevent busy receiving data and interference during data processing*/
+	// HAL_UART_DMAStop(At_Object->huart);
+	// MX_USART3_UART_Init();
+	// g_Lte_mutex = true;
+	if (At_Object)
+	{
+		shellPrint(Shell_Object, "@Success:At object allocation succeeded.\r\n");
+		At_Object->AT_SetDefault(At_Object);
+		At_Object->Free_AtObject(&At_Object);
+	}
+	else
+		shellPrint(Shell_Object, "@Error:At object allocation failed!\r\n");
+	// g_Lte_mutex = false;
+	/*Reopen DMA reception*/
+	// HAL_UART_Receive_DMA(At_Object->huart, mdRTU_Recive_Buf(Slave1_Object), MODBUS_PDU_SIZE_MAX);
+	// __HAL_UART_ENABLE_IT(At_Object->huart, UART_IT_IDLE);
+	osTimerStart(reportHandle, 1000);
+	osTimerStart(mdtimerHandle, 1000);
+	osThreadResumeAll();
+}
+SHELL_EXPORT_CMD(SHELL_CMD_PERMISSION(0) | SHELL_CMD_TYPE(SHELL_TYPE_CMD_FUNC), at_config, At_Config, configure);

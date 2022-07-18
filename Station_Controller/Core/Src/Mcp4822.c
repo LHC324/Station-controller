@@ -78,12 +78,31 @@ void Mcp48xx_Write(Dac_Obj *p_ch, uint16_t data)
  */
 void Output_Current(Dac_Obj *p_ch, float data)
 {
-	/*浮点数电流值转换为uint16_t*/
-	uint16_t value = (uint16_t)(gDac_OutPrarm[p_ch->Channel][0] * data + gDac_OutPrarm[p_ch->Channel][1]);
+	Save_HandleTypeDef *ps = &Save_Flash;
 
-	value = data ? ((data >= 20.0F) ? 0x0FFF : value) : 0U;
+	if (ps)
+	{
+		/*浮点数电流值转换为uint16_t*/
+		// uint16_t value = (uint16_t)(gDac_OutPrarm[p_ch->Channel][0] * data + gDac_OutPrarm[p_ch->Channel][1]);
+		uint16_t value = (uint16_t)(ps->Param.Dac.Dac[p_ch->Channel][0] * data +
+									ps->Param.Dac.Dac[p_ch->Channel][1]);
+
+		value = data ? ((data > 20.0F) ? 0x0FFF : value) : 0U;
 #if defined(USING_DEBUG)
-	// shellPrint(Shell_Object, "Value[%p] = %d.\r\n", p_ch, value);
+		// shellPrint(Shell_Object, "Value[%p] = %d.\r\n", p_ch, value);
 #endif
-	Mcp48xx_Write(p_ch, value);
+		Mcp48xx_Write(p_ch, value);
+	}
+}
+
+/**
+ * @brief	通过DAC值输出电流
+ * @details
+ * @param   p_ch :目标通道
+ * @param	data:写入的数据
+ * @retval	None
+ */
+void Coutput_Current(Dac_Obj *p_ch, uint32_t data)
+{
+	Mcp48xx_Write(p_ch, data & 0x0FFF);
 }

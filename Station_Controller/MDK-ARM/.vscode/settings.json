@@ -28,6 +28,7 @@
         "flash.h": "c",
         "dma.h": "c",
         "lte.h": "c",
-        "config.h": "c"
+        "config.h": "c",
+        "clibration.h": "c"
     }
 }

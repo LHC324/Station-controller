@@ -39,11 +39,11 @@ static mdVOID mdRTUHook(ModbusRTUSlaveHandler handler, mdU16 addr)
     bool save_flag = false;
 
     /*处于后台参数区*/
-    if ((addr >= PARAM_MD_ADDR) && (addr < MDUSER_NAME_ADDR))
+    if ((addr >= PARAM_MD_ADDR) && (addr < PARAM_END_ADDR))
     {
         uint8_t site = (addr - PARAM_MD_ADDR) / 2U;
-        float data = 0, temp_data = 0;
-
+        // float data = 0, temp_data = 0;
+        float data = 0;
         mdSTATUS ret = mdRTU_ReadHoldRegisters(handler, addr, 2U, (mdU16 *)&data);
         if (ret == mdFALSE)
         {
@@ -55,18 +55,27 @@ static mdVOID mdRTUHook(ModbusRTUSlaveHandler handler, mdU16 addr)
         {
             float *pdata = (float *)pd->Slave.pHandle;
             /*保留迪文屏幕值*/
-            temp_data = data;
-            Endian_Swap((uint8_t *)&data, 0U, sizeof(float));
-            if ((data >= pd->Slave.pMap[site].lower) && (data <= pd->Slave.pMap[site].upper))
+            // temp_data = data;
+            // Endian_Swap((uint8_t *)&data, 0U, sizeof(float));
+            if ((data >= pd->Slave.pMap[site].lower) && (data <= pd->Slave.pMap[site].upper) &&
+                site < pd->Slave.Events_Size)
             {
-                /*确认数据回传到屏幕*/
-                pd->Dw_Write(pd, pd->Slave.pMap[site].addr, (uint8_t *)&temp_data, sizeof(float));
-                if (site < pd->Slave.Events_Size)
+                // /*确认数据回传到屏幕*/
+                // pd->Dw_Write(pd, pd->Slave.pMap[site].addr, (uint8_t *)&temp_data, sizeof(float));
+                // if (site < pd->Slave.Events_Size)
                 {
                     pdata[site] = data;
                     /*存储标志*/
                     save_flag = true;
                 }
+                Endian_Swap((uint8_t *)&data, 0U, sizeof(float));
+                /*确认数据回传到屏幕*/
+                pd->Dw_Write(pd, pd->Slave.pMap[site].addr, (uint8_t *)&data, sizeof(float));
+            }
+            else
+            {
+                /*保存原值不变*/
+                mdRTU_WriteHoldRegs(handler, addr, 2U, (mdU16 *)&pdata[site]);
             }
         }
 #if defined(USING_DEBUG)
@@ -74,7 +83,7 @@ static mdVOID mdRTUHook(ModbusRTUSlaveHandler handler, mdU16 addr)
 #endif
     }
     /*用户名和密码处理*/
-    else if (addr >= MDUSER_NAME_ADDR)
+    else if (addr >= PARAM_END_ADDR)
     {
         uint16_t data = 0;
         mdSTATUS ret = mdRTU_ReadHoldRegisters(handler, addr, 2U, (mdU16 *)&data);
@@ -110,7 +119,7 @@ static mdVOID mdRTUHook(ModbusRTUSlaveHandler handler, mdU16 addr)
         /*计算crc校验码*/
         ps->Param.crc16 = Get_Crc16((uint8_t *)&ps->Param, sizeof(Save_Param) - sizeof(ps->Param.crc16), 0xFFFF);
         /*参数保存到Flash*/
-        FLASH_Write(PARAM_SAVE_ADDRESS, (uint16_t *)&Save_Flash.Param, sizeof(Save_Param));
+        FLASH_Write(PARAM_SAVE_ADDRESS, (uint16_t *)&ps->Param, sizeof(Save_Param));
 #if defined(USING_FREERTOS)
         taskEXIT_CRITICAL();
 #endif

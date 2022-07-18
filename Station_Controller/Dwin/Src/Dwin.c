@@ -374,11 +374,11 @@ static void Dwin_EventHandle(pDwinHandle pd, uint8_t *pSite)
 		/*计算crc校验码*/
 		ps->Param.crc16 = Get_Crc16((uint8_t *)&ps->Param, sizeof(Save_Param) - sizeof(ps->Param.crc16), 0xFFFF);
 		/*参数保存到Flash*/
-		FLASH_Write(PARAM_SAVE_ADDRESS, (uint16_t *)&Save_Flash.Param, sizeof(Save_Param));
+		FLASH_Write(PARAM_SAVE_ADDRESS, (uint16_t *)&ps->Param, sizeof(Save_Param));
 #if defined(USING_FREERTOS)
 		taskEXIT_CRITICAL();
 #endif
-		Endian_Swap((uint8_t *)&data, 0U, sizeof(TYPEDEF_STRUCT));
+		// Endian_Swap((uint8_t *)&data, 0U, sizeof(TYPEDEF_STRUCT));
 		/*数据写回保持寄存器区*/
 		mdSTATUS ret = mdRTU_WriteHoldRegs(Slave1_Object, PARAM_MD_ADDR + (*pSite) * 2U, 2U, (mdU16 *)&data);
 		if (ret == mdFALSE)
@@ -387,10 +387,11 @@ static void Dwin_EventHandle(pDwinHandle pd, uint8_t *pSite)
 			shellPrint(Shell_Object, "Holding register addr[0x%x], Write: %.3f failed!\r\n", PARAM_MD_ADDR + (*pSite) * 2U, data);
 #endif
 		}
-		/*确认数据回传到屏幕*/
-		pd->Dw_Write(pd, pd->Slave.pMap[*pSite].addr, (uint8_t *)&data, sizeof(TYPEDEF_STRUCT));
+		// Endian_Swap((uint8_t *)&data, 0U, sizeof(TYPEDEF_STRUCT));
+		// /*确认数据回传到屏幕*/
+		// pd->Dw_Write(pd, pd->Slave.pMap[*pSite].addr, (uint8_t *)&data, sizeof(TYPEDEF_STRUCT));
 #if defined(USING_DEBUG)
-		shellPrint(Shell_Object, "pdata[%d] = %.3f,Ptank_max = %.3f.\r\n", *pSite, pdata[*pSite], Save_Flash.Param.Ptank_max);
+		shellPrint(Shell_Object, "pdata[%d] = %.3f,Ptank_max = %.3f.\r\n", *pSite, pdata[*pSite], ps->Param.Ptank_max);
 #endif
 	}
 	else
@@ -401,7 +402,12 @@ static void Dwin_EventHandle(pDwinHandle pd, uint8_t *pSite)
 		uint8_t error = data < pd->Slave.pMap[*pSite].lower ? BELOW_LOWER_LIMIT : ABOVE_UPPER_LIMIT;
 		/*屏幕传回参数越界处理：维持原值不变、或者切换报错页面*/
 		pd->Dw_Error(pd, error, *pSite);
+		/*输入超出界限范围后显示原值*/
+		data = pdata[*pSite];
 	}
+	Endian_Swap((uint8_t *)&data, 0U, sizeof(TYPEDEF_STRUCT));
+	/*确认数据回传到屏幕*/
+	pd->Dw_Write(pd, pd->Slave.pMap[*pSite].addr, (uint8_t *)&data, sizeof(TYPEDEF_STRUCT));
 }
 
 /**
@@ -415,6 +421,7 @@ static void Dwin_ErrorHandle(pDwinHandle pd, uint8_t error_code, uint8_t site)
 {
 	TYPEDEF_STRUCT tdata = (error_code == BELOW_LOWER_LIMIT) ? pd->Slave.pMap[site].lower : pd->Slave.pMap[site].upper;
 #if defined(USING_DEBUG)
+	/*同时可切换到目标提示界面*/
 	if (error_code == BELOW_LOWER_LIMIT)
 	{
 		shellPrint(Shell_Object, "Error: Below lower limit %.3f.\r\n", tdata);
@@ -424,9 +431,9 @@ static void Dwin_ErrorHandle(pDwinHandle pd, uint8_t error_code, uint8_t site)
 		shellPrint(Shell_Object, "Error: Above upper limit %.3f.\r\n", tdata);
 	}
 #endif
-	Endian_Swap((uint8_t *)&tdata, 0U, sizeof(TYPEDEF_STRUCT));
-	/*设置错误时将显示上下限*/
-	pd->Dw_Write(pd, pd->Slave.pMap[site].addr, (uint8_t *)&tdata, sizeof(TYPEDEF_STRUCT));
+	// Endian_Swap((uint8_t *)&tdata, 0U, sizeof(TYPEDEF_STRUCT));
+	// /*设置错误时将显示上下限*/
+	// pd->Dw_Write(pd, pd->Slave.pMap[site].addr, (uint8_t *)&tdata, sizeof(TYPEDEF_STRUCT));
 }
 
 /**
@@ -445,7 +452,10 @@ static void Restore_Factory(pDwinHandle pd, uint8_t *pSite)
 #if defined(USING_FREERTOS)
 		taskENTER_CRITICAL();
 #endif
-		FLASH_Write(PARAM_SAVE_ADDRESS, (uint16_t *)&Save_InitPara, sizeof(Save_Param));
+		/*计算crc校验码*/
+		ps->Param.crc16 = Get_Crc16((uint8_t *)&ps->Param, sizeof(Save_Param) - sizeof(ps->Param.crc16), 0xFFFF);
+		// FLASH_Write(PARAM_SAVE_ADDRESS, (uint16_t *)&Save_InitPara, sizeof(Save_Param));
+		FLASH_Write(PARAM_SAVE_ADDRESS, (uint16_t *)&ps->Param, sizeof(Save_Param));
 #if defined(USING_FREERTOS)
 		taskEXIT_CRITICAL();
 #endif

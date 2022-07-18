@@ -23,7 +23,7 @@ extern "C"
 #define WIFI_RELOAD P15
 
 /*定义设备ID*/
-#define DRIVERS_ID "75"
+#define DRIVERS_ID "82"
 /*定义串口参数*/
 #define UART_PARAM "115200,8,1,NONE,NFC"
 /*定义数据打包长度*/
@@ -39,7 +39,7 @@ extern "C"
 /*当前设备热点名称*/
 #define AP_NAME STR_MCRO() //"AT+WAP=PLC7_AP,NONE\r\n"
 /*当前设备云平台设备号*/
-#define CLOUD_ID "AT+REGCLOUD=000196390000000000" DRIVERS_ID ",SkdGAzyl\r\n"
+#define CLOUD_ID "AT+CLOUD=000196390000000000" DRIVERS_ID ",SkdGAzyl\r\n"
 /*当前WIFI模块工作方式*/
 #define AP_STA_MODE "AT+WMODE=APSTA\r\n"
 #define STA_MODE "AT+WMODE=APSTA\r\n"
@@ -49,6 +49,8 @@ extern "C"
 #define RESTART_CMD "AT+Z\r\n"
 
 #define Get_Ms(__sec) ((uint32_t)((__sec)*1000U))
+#define GET_TIMEOUT_FLAG(Stime, Ctime, timeout, MAX) \
+	((Ctime) < (Stime) ? !!((((MAX) - (Stime)) + (Ctime)) > (timeout)) : !!((Ctime) - (Stime) > (timeout)))
 	typedef unsigned char (*event)(void);
 	typedef struct
 	{
@@ -83,6 +85,7 @@ extern "C"
 		AT_Table Table;
 		At_Gpio Gpio;
 		UART_HandleTypeDef *huart;
+		void *pHandle;
 		void (*AT_SetPin)(pAtHandle, Gpiox_info *, GPIO_PinState);
 		void (*AT_SetDefault)(pAtHandle);
 		bool (*AT_ExeAppointCmd)(pAtHandle, AT_Command *);

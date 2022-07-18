@@ -43,14 +43,17 @@ extern "C"
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-#define USING_DEBUG 1
+// #define USING_DEBUG 1
+#define USING_SHELL
 // #define USING_DEBUG_APPLICATION
 #define USING_RTOS
 #define USING_DMA
 /*Custom memory management*/
 #define CUSTOM_MALLOC pvPortMalloc
 #define CUSTOM_FREE vPortFree
+#define CURRENT_HARDWARE_VERSION 101
 #define CURRENT_SOFT_VERSION 120
+#define SYSTEM_VERSION() ((uint32_t)((CURRENT_HARDWARE_VERSION << 16U) | CURRENT_SOFT_VERSION))
 #define PARAM_MD_ADDR 0x0008
 #define MDUSER_NAME_ADDR 0x0038
 #define SOFT_VERSION_ADDR 0x003A
@@ -78,6 +81,15 @@ extern "C"
 #define ENTER_CODE 0x0D
 #define SPOT_CODE 0x2E
 #define COMMA_CODE 0x2C
+
+  typedef struct
+  {
+    float Cp, Cq;
+  } Adc_Param_HandleTypeDef;
+  typedef struct
+  {
+    float Dac[4U][2U];
+  } Dac_Param_HandleTypeDef;
 
   typedef struct
   {
@@ -122,6 +134,10 @@ extern "C"
     uint16_t User_Code;
     // uint32_t Update;
     uint32_t Error_Code;
+    uint32_t System_Version;
+    uint32_t System_Flag;
+    Adc_Param_HandleTypeDef Adc;
+    Dac_Param_HandleTypeDef Dac;
     uint32_t crc16;
   } Save_Param;
   typedef struct
@@ -202,7 +218,8 @@ extern "C"
 #define RS4850RX_Pin GPIO_PIN_6
 #define RS4850RX_GPIO_Port GPIOD
   /* USER CODE BEGIN Private defines */
-
+#define GET_PARAM_SITE(TYPE, MEMBER, SIZE) (offsetof(TYPE, MEMBER) / sizeof(SIZE))
+#define PARAM_END_ADDR (PARAM_MD_ADDR + GET_PARAM_SITE(Save_Param, User_Name, uint16_t))
   /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -39,54 +39,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define TANK_PRESSURE 0x00
-/*Vaporizer outlet pressure*/
-#define VA_OUT_PRESSURE 0x01
-/*Gas station outlet pressure*/
-#define GAS_SOUT_PRESSURE 0x02
-/*tank level*/
-#define TANK_LEVEL 0x03
-#define TANK_PRESSURE_MAX 0x04
-#define TANK_PRESSURE_MIN 0x05
-#define VA_OUT_PRESSURE_MAX 0x06
-#define VA_OUT_PRESSURE_MIN 0x07
-#define GAS_SOUT_PRESSURE_MAX 0x08
-#define GAS_SOUT_PRESSURE_MIN 0x09
-#define TANK_LEVEL_MAX 0x0A
-#define TANK_LEVEL_MIN 0x0B
-/*Pressure tolerance upper limit*/
-#define PRESSURE_TOLE_UPPER 0x0C
-/*Pressure tolerance lower limit*/
-#define PRESSURE_TOLE_LOWER 0x0D
-/*Liquid level tolerance upper limit*/
-#define LEVE_TOLE_UPPER 0x0E
-/*Liquid level tolerance lower limit*/
-#define LEVE_TOLE_LOWER 0x0F
-
-/*Start mode :Pressure relief start value*/
-#define SPF_START_VALUE 0x10
-/*Start mode :Pressure relief stop value*/
-#define SPF_STOP_VALUE 0x11
-/*Start mode critical value of carburetor outlet pressure*/
-#define SVA_OUT_PRESSURE_LIMIT 0x12
-/*Back pressure difference*/
-#define PRESSURE_DIFFERENCE 0x13
-/*Tank pressure difference*/
-#define TANK_PRESSURE_DIFFERENCE 0x14
-/*Start mode critical value of carburetor outlet pressure*/
-#define PVA_OUT_PRESSURE_LIMIT 0x15
-/*Stop mode :Pressure relief start value*/
-#define PPF_START_VALUE 0x16
-/*Stop mode :Pressure relief stop value*/
-#define PPF_STOP_VALUE 0x17
-/*Safe : Tank pressure lower limit*/
-#define SAFE_TANK_PRESSURE_MIN 0x18
-/*Safe : Tank level lower limit*/
-#define SATANK_LEVEL_MIN 0x19
-
-// float g_Flash[SAVE_SIZE];
-// #define Get_Value(__addr) (g_Flash[__addr])
-// #define Set_Value(__addr, __value) (g_Flash[__addr] = (__value))
 
 Save_HandleTypeDef Save_Flash;
 Save_User *puser = &Save_Flash.User;
@@ -133,24 +85,24 @@ osSemaphoreId Recive_Uart3Handle;
  */
 void Report_Backparam(pDwinHandle pd, Save_Param *sp)
 {
+  uint32_t actual_size = offsetof(Save_Param, User_Name); // 29*szieof(float)
 #if defined(USING_FREERTOS)
-  float *pdata = (float *)CUSTOM_MALLOC(sizeof(Save_Param) - 1U);
+  float *pdata = (float *)CUSTOM_MALLOC(actual_size);
   if (!pdata)
     goto __exit;
 #else
   float pdata[sizeof(Save_Param) - 1U];
 #endif
 
-  memcpy(pdata, sp, sizeof(Save_Param) - 1U);
-  for (float *p = pdata; p < pdata + sizeof(Save_Param) / sizeof(float) - 1U; p++)
+  memcpy(pdata, sp, actual_size);
+  for (float *p = pdata; p < pdata + actual_size / sizeof(float); p++)
   {
 #if defined(USING_DEBUG)
     shellPrint(Shell_Object, "sp = %p,p = %p, *p = %.3f\r\n", sp, p, *p);
 #endif
     Endian_Swap((uint8_t *)p, 0U, sizeof(float));
   }
-  pd->Dw_Write(pd, PARAM_SETTING_ADDR, (uint8_t *)pdata, sizeof(Save_Param) - (sizeof(sp->User_Name) + sizeof(sp->User_Code) + sizeof(sp->Error_Code) + sizeof(sp->crc16)));
-
+  pd->Dw_Write(pd, PARAM_SETTING_ADDR, (uint8_t *)pdata, actual_size);
 __exit:
   CUSTOM_FREE(pdata);
 }
@@ -351,7 +303,7 @@ void MX_FREERTOS_Init(void)
 
   /* Create the thread(s) */
   /* definition and creation of Shell */
-  osThreadDef(Shell, Shell_Task, osPriorityLow, 0, 128);
+  osThreadDef(Shell, Shell_Task, osPriorityLow, 0, 256);
   ShellHandle = osThreadCreate(osThread(Shell), (void *)&shell);
 
   /* definition and creation of Input */
@@ -418,7 +370,11 @@ void Input_Task(void const *argument)
   for (;;)
   {
     Read_Io_Handle();
+#if defined(USING_DEBUG)
+    osDelay(1000);
+#else
     osDelay(100);
+#endif
   }
   /* USER CODE END Input_Task */
 }
@@ -550,9 +506,11 @@ void RS485_Task(void const *argument)
     /*https://www.cnblogs.com/w-smile/p/11333950.html*/
     if (osOK == osSemaphoreWait(Recive_Uart2Handle, osWaitForever))
     {
-      mdRTU_Handler(Slave2_Object);
+
 #if defined(USING_DEBUG)
-      // shellPrint(Shell_Object, "RS485 data!\r\n");
+// shellPrint(Shell_Object, "RS485 data!\r\n");
+#else
+      mdRTU_Handler(Slave2_Object);
 #endif
     }
   }
@@ -621,7 +579,7 @@ void Contrl_Task(void const *argument)
 #if defined(USING_DEBUG)
       // shellPrint(Shell_Object, "R_Current[0x%X] = %.3f\r\n", p, *p);
 #endif
-      Endian_Swap((uint8_t *)p, 0U, sizeof(float));
+      // Endian_Swap((uint8_t *)p, 0U, sizeof(float));
       /*User sensor access error check*/
 #define ERROR_CHECK
       {
@@ -686,15 +644,6 @@ void Contrl_Task(void const *argument)
 #endif
         goto __no_action;
       }
-      //       if (ps->User.Ltank <= ps->Param.Ltank_limit)
-      //       {
-      //         /*close V3*/
-      //         Close_Vx(3U);
-      // #if defined(USING_DEBUG_APPLICATION)
-      //         shellPrint(Shell_Object, "SAF: close V3\r\n");
-      // #endif
-      //         goto __no_action;
-      //       }
     }
 #if defined(USING_DEBUG_APPLICATION)
     shellPrint(Shell_Object, "sbit = 0x%d\r\n", sbit);
@@ -755,51 +704,9 @@ void Contrl_Task(void const *argument)
             }
           }
         }
-        //         if (Sure_Overtimes(&timer[0U], STIMES))
-        //         {
-        //           if (ps->User.Ptank > ps->Param.PSspf_start)
-        //           {
-        //             /*open V4*/
-        //             Open_Vx(4U);
-        // #if defined(USING_DEBUG_APPLICATION)
-        //             shellPrint(Shell_Object, "A1: open V4\r\n");
-        // #endif
-        //           }
-        //         }
       }
 #define B1C1
       {
-        //         if (ps->User.Pvap_outlet >= ps->Param.PSvap_outlet_limit)
-        //         {
-        //           Set_SoftTimer_Flag(&timer[1U], true);
-        //           if (Sure_Overtimes(&timer[1U], STIMES))
-        //           {
-        //             // osDelay(10000);
-        //             /*open V3*/
-        //             Open_Vx(3U);
-        // #if defined(USING_DEBUG_APPLICATION)
-        //             shellPrint(Shell_Object, "B1C1: open V3\r\n");
-        // #endif
-        //           }
-        //           /*open V1 、close V2*/
-        //           Open_Vx(1U), Close_Vx(2U);
-        // #if defined(USING_DEBUG_APPLICATION)
-        //           shellPrint(Shell_Object, "B1C1: open V1 close V2\r\n");
-        // #endif
-        //         }
-        //         else
-        //         {
-        //           /*Clear counter*/
-        //           Clear_Counter(&timer[1U]);
-        //           /*open counter*/
-        //           // Set_SoftTimer_Flag(&timer[1U], true);
-        //           /*close V3*/
-        //           Close_Vx(3U), Close_Vx(1U), Open_Vx(2U);
-        // #if defined(USING_DEBUG_APPLICATION)
-        //           shellPrint(Shell_Object, "B1C1: close V3 close V1 open V2\r\n");
-        // #endif
-        //         }
-
         if (ps->User.Pvap_outlet >= ps->Param.PSvap_outlet_Start)
         {
           Set_SoftTimer_Flag(&timer[1U], true);
@@ -978,10 +885,18 @@ void Report(void const *argument)
   osDelay(5);
   /*Analog input*/
   mdRTU_ReadInputRegisters(Slave1_Object, INPUT_ANALOG_START_ADDR, ADC_DMA_CHANNEL * 2U, (mdU16 *)pdata);
+  for (uint8_t i = 0; i < ADC_DMA_CHANNEL; i++)
+  {
+    Endian_Swap((uint8_t *)&pdata[i], 0U, sizeof(float));
+  }
   Dwin_Object->Dw_Write(Dwin_Object, ANALOG_INPUT_ADDR, (uint8_t *)pdata, ADC_DMA_CHANNEL * sizeof(float));
   osDelay(5);
   /*Analog output*/
   mdRTU_ReadHoldRegisters(Slave1_Object, OUT_ANALOG_START_ADDR, EXTERN_ANALOGOUT_MAX * 2U, (mdU16 *)pdata);
+  for (uint8_t i = 0; i < EXTERN_ANALOGOUT_MAX; i++)
+  {
+    Endian_Swap((uint8_t *)&pdata[i], 0U, sizeof(float));
+  }
   Dwin_Object->Dw_Write(Dwin_Object, ANALOG_OUTPUT_ADDR, (uint8_t *)pdata, EXTERN_ANALOGOUT_MAX * sizeof(float));
   osDelay(5);
   /*Report error code*/

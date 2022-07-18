@@ -107,12 +107,15 @@ void Write_Digital_IO(void)
  */
 void Read_Analog_Io(void)
 {
-#define CP 0.005378F
-#define CQ 0.375224F
-#define P (3.0F / 2.0F)
+// #define CP 0.005378F
+// #define CQ 0.375224F
+// #define P (3.0F / 2.0F)
+#define CP 0.009052399F
+#define CQ 0.588793299F
     mdSTATUS ret = mdFALSE;
     uint16_t tch = 0;
     static bool first_flag = false;
+    Save_HandleTypeDef *ps = &Save_Flash;
     /*滤波结构需要不断迭代，否则滤波器无法正常工作*/
 #if defined(KALMAN)
     KFP hkfp = {
@@ -188,8 +191,15 @@ void Read_Analog_Io(void)
     for (uint16_t ch = 0; ch < ADC_DMA_CHANNEL; ch++)
     { /*获取DAC值*/
         tch = Get_ADC_Channel(ch, 4U, ADC_DMA_CHANNEL);
-        pdata[ch] = (CP * Get_AdcValue(tch) + CQ) * P;
-        pdata[ch] = (pdata[ch] <= (CQ * P)) ? 0 : pdata[ch];
+        // pdata[ch] = (CP * Get_AdcValue(tch) + CQ) * P;
+        if (ps)
+            pdata[ch] = ps->Param.Adc.Cp * Get_AdcValue(tch) + ps->Param.Adc.Cq;
+            // pdata[ch] = CP * Get_AdcValue(tch) + CQ;
+#if defined(USING_DEBUG)
+            // shellPrint(Shell_Object, "R_AD[%d]_Value = %d\r\n", ch, Get_AdcValue(tch));
+#endif
+        // pdata[ch] = (pdata[ch] <= (CQ * P)) ? 0 : pdata[ch];
+        pdata[ch] = (pdata[ch] <= ps->Param.Adc.Cq) ? 0 : pdata[ch];
         /*滤波处理*/
 #if defined(KALMAN)
         pdata[ch] = kalmanFilter(&pkfp[ch], pdata[ch]);
@@ -197,7 +207,7 @@ void Read_Analog_Io(void)
         pdata[ch] = sidefilter(&pside[ch], pdata[ch]);
 #endif
         /*大小端转换*/
-        Endian_Swap((uint8_t *)&pdata[ch], 0U, sizeof(float));
+        // Endian_Swap((uint8_t *)&pdata[ch], 0U, sizeof(float));
 
 #if defined(USING_DEBUG)
         // shellPrint(Shell_Object, "R_AD[%d] = %.3f\r\n", ch, pdata[ch]);
@@ -257,7 +267,7 @@ void Write_Analog_IO(void)
     for (uint16_t ch = 0; ch < EXTERN_ANALOGOUT_MAX; ch++)
     {
         /*大小端转换*/
-        Endian_Swap((uint8_t *)&pdata[ch], 0U, sizeof(float));
+        // Endian_Swap((uint8_t *)&pdata[ch], 0U, sizeof(float));
 #if defined(USING_DEBUG)
         // shellPrint(Shell_Object, "W_AD[%d] = %.3f\r\n", ch, pdata[ch]);
 #endif

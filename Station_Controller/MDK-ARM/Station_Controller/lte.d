@@ -40,6 +40,11 @@ station_controller\lte.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 station_controller\lte.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 station_controller\lte.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdarg.h
 station_controller\lte.o: ../Core/Inc/usart.h
+station_controller\lte.o: ../FreeModBus/Inc/mdrtuslave.h
+station_controller\lte.o: ../FreeModBus/Inc/mdtype.h
+station_controller\lte.o: ../FreeModBus/Inc/mdconfig.h
+station_controller\lte.o: ../FreeModBus/Inc/mdregpool.h
+station_controller\lte.o: ../FreeModBus/Inc/mdrecbuffer.h
 station_controller\lte.o: ../Letter_Shell/Inc/shell_port.h
 station_controller\lte.o: ../Letter_Shell/Inc/shell.h
 station_controller\lte.o: ../Letter_Shell/Inc/shell_cfg.h
