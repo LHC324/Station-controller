@@ -221,7 +221,7 @@ I (../FreeModBus/Inc/mdrecbuffer.h)(0x611377AB)
 I (../Dwin/Inc/dwin.h)(0x627E4F0C)
 I (../Core/Inc/Flash.h)(0x6246550D)
 I (../Dwin/Inc/tool.h)(0x626A5E6C)
-I (../Core/Inc/lte.h)(0x62D5120F)
+I (../Core/Inc/lte.h)(0x62D531A7)
 F (../Core/Src/gpio.c)(0x6278F2E1)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM3 -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../Dwin/Inc -I ../Letter_Shell/Inc -I ../FreeModBus/Inc -I ../Upgrade_4G/Inc-I.\RTE\_Station_Controller-IC:\Users\Administrator\AppData\Local\Arm\Packs\ARM\CMSIS\5.8.0\CMSIS\Core\Include-IC:\Users\Administrator\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="527" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE -DUSING_FREERTOS -DUSER_VECT_TAB_ADDRESS-o station_controller\gpio.o --omf_browse station_controller\gpio.crf --depend station_controller\gpio.d)
 I (../Core/Inc/gpio.h)(0x6278F2E1)
 I (../Core/Inc/main.h)(0x62D40CB8)
@@ -663,7 +663,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x60EFF8EB)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x60EFF8EB)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x60EFF8EB)
 F (..\Core\Src\lte.c)(0x62D51403)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Middlewares/Third_Party/FreeRTOS/Source/include -I ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM3 -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../Dwin/Inc -I ../Letter_Shell/Inc -I ../FreeModBus/Inc -I ../Upgrade_4G/Inc-I.\RTE\_Station_Controller-IC:\Users\Administrator\AppData\Local\Arm\Packs\ARM\CMSIS\5.8.0\CMSIS\Core\Include-IC:\Users\Administrator\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="527" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE -DUSING_FREERTOS -DUSER_VECT_TAB_ADDRESS-o station_controller\lte.o --omf_browse station_controller\lte.crf --depend station_controller\lte.d)
-I (../Core/Inc/lte.h)(0x62D5120F)
+I (../Core/Inc/lte.h)(0x62D531A7)
 I (../Core/Inc/main.h)(0x62D40CB8)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x60EFF8EB)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6278F2E5)
