@@ -9,7 +9,7 @@
 /*定义AT模块对象*/
 pAtHandle At_Object;
 
-extern osTimerId reportHandle;
+// extern osTimerId reportHandle;
 extern osTimerId mdtimerHandle;
 /*局部函数申明*/
 static void Free_AtObject(pAtHandle *pa);
@@ -203,8 +203,8 @@ static bool At_ExeAppointCmd(pAtHandle pa, AT_Command *pat)
 				shellPrint(Shell_Object, "@Error:Retransmission exceeds the maximum number of times!\r\n");
 			}
 		}
-		return result;
 	}
+	return result;
 }
 
 /**
@@ -215,7 +215,7 @@ static bool At_ExeAppointCmd(pAtHandle pa, AT_Command *pat)
  */
 void At_Config(void)
 {
-	osTimerStop(reportHandle);
+	// osTimerStop(reportHandle);
 	osTimerStop(mdtimerHandle);
 	osThreadSuspendAll();
 	MX_AtInit();
@@ -238,7 +238,7 @@ void At_Config(void)
 	/*Reopen DMA reception*/
 	// HAL_UART_Receive_DMA(At_Object->huart, mdRTU_Recive_Buf(Slave1_Object), MODBUS_PDU_SIZE_MAX);
 	// __HAL_UART_ENABLE_IT(At_Object->huart, UART_IT_IDLE);
-	osTimerStart(reportHandle, 1000);
+	// osTimerStart(reportHandle, 1000);
 	osTimerStart(mdtimerHandle, 1000);
 	osThreadResumeAll();
 }

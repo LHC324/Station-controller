@@ -10,7 +10,7 @@
 #include "io_signal.h"
 #include "tool.h"
 
-extern osTimerId reportHandle;
+// extern osTimerId reportHandle;
 extern osTimerId mdtimerHandle;
 
 // #define RECEIVE_TARET_UART huart1
@@ -149,7 +149,7 @@ bool Adc_Clibration(void)
 	extern Dac_Obj dac_object_group[EXTERN_ANALOGOUT_MAX];
 #define SAMPLING_NUM 8U
 
-	osTimerStop(reportHandle);
+	// osTimerStop(reportHandle);
 	osTimerStop(mdtimerHandle);
 	osThreadSuspendAll();
 
@@ -213,7 +213,7 @@ bool Adc_Clibration(void)
 	}
 __exit:
 	/*校准完成后恢复任务和定时器*/
-	osTimerStart(reportHandle, 1000);
+	// osTimerStart(reportHandle, 1000);
 	osTimerStart(mdtimerHandle, 1000);
 	osThreadResumeAll();
 
@@ -238,7 +238,7 @@ bool Dac_Clibration(void)
 	extern Dac_Obj dac_object_group[EXTERN_ANALOGOUT_MAX];
 
 	/*校准前挂起所有无关任务,只保留运行指示灯*/
-	osTimerStop(reportHandle);
+	// osTimerStop(reportHandle);
 	osTimerStop(mdtimerHandle);
 	osThreadSuspendAll();
 
@@ -291,7 +291,7 @@ bool Dac_Clibration(void)
 	shellPrint(pShell, "@DAC parameters stored successfully!\r\n");
 __exit:
 	/*校准完成后恢复任务和定时器*/
-	osTimerStart(reportHandle, 1000);
+	// osTimerStart(reportHandle, 1000);
 	osTimerStart(mdtimerHandle, 1000);
 	osThreadResumeAll();
 

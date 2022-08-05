@@ -66,8 +66,8 @@ osThreadId UpdateHandle;
 osThreadId ScreenHandle;
 osThreadId RS485Handle;
 osThreadId ContrlHandle;
+osThreadId ReportHandle;
 osMessageQId UserQueueHandle;
-osTimerId reportHandle;
 osTimerId mdtimerHandle;
 osMutexId shellMutexHandle;
 osSemaphoreId Recive_Uart1Handle;
@@ -175,7 +175,7 @@ void Update_Task(void const *argument);
 void Screen_Task(void const *argument);
 void RS485_Task(void const *argument);
 void Contrl_Task(void const *argument);
-void Report(void const *argument);
+void Report_Task(void const *argument);
 void MdTimer(void const *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -280,10 +280,6 @@ void MX_FREERTOS_Init(void)
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* Create the timer(s) */
-  /* definition and creation of report */
-  osTimerDef(report, Report);
-  reportHandle = osTimerCreate(osTimer(report), osTimerPeriodic, NULL);
-
   /* definition and creation of mdtimer */
   osTimerDef(mdtimer, MdTimer);
   mdtimerHandle = osTimerCreate(osTimer(mdtimer), osTimerPeriodic, (void *)Slave1_Object);
@@ -319,7 +315,7 @@ void MX_FREERTOS_Init(void)
   UpdateHandle = osThreadCreate(osThread(Update), (void *)Slave1_Object);
 
   /* definition and creation of Screen */
-  osThreadDef(Screen, Screen_Task, osPriorityBelowNormal, 0, 256);
+  osThreadDef(Screen, Screen_Task, osPriorityNormal, 0, 256);
   ScreenHandle = osThreadCreate(osThread(Screen), NULL);
 
   /* definition and creation of RS485 */
@@ -330,9 +326,13 @@ void MX_FREERTOS_Init(void)
   osThreadDef(Contrl, Contrl_Task, osPriorityHigh, 0, 256);
   ContrlHandle = osThreadCreate(osThread(Contrl), NULL);
 
+  /* definition and creation of Report */
+  osThreadDef(Report, Report_Task, osPriorityBelowNormal, 0, 256);
+  ReportHandle = osThreadCreate(osThread(Report), NULL);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  osTimerStart(reportHandle, REPORT_TIMES);
+  // osTimerStart(reportHandle, REPORT_TIMES);
   osTimerStart(mdtimerHandle, MD_TIMES);
   // osThreadSuspend(ShellHandle);
   /* USER CODE END RTOS_THREADS */
@@ -478,9 +478,9 @@ void Screen_Task(void const *argument)
     if (osOK == osSemaphoreWait(Recive_Uart1Handle, osWaitForever))
     {
       /*Screen data distribution detected, close reporting*/
-      osTimerStop(reportHandle);
+      // osTimerStop(reportHandle);
       Dwin_Handler(Dwin_Object);
-      osTimerStart(reportHandle, REPORT_TIMES);
+      // osTimerStart(reportHandle, REPORT_TIMES);
 #if defined(USING_DEBUG)
       // shellPrint(Shell_Object, "Dwin data!\r\n");
       // shellPrint(Shell_Object, "rx_count = %d\r\n", Dwin_Object->Slave.RxCount);
@@ -529,23 +529,34 @@ void Contrl_Task(void const *argument)
   /* USER CODE BEGIN Contrl_Task */
 #define OFFSET 4U
 #define BX_SIZE 4U
+#if defined(USING_LYNCH)
+#define VX_SIZE 6U
+#else
 #define VX_SIZE 5U
-#define STIMES 10U
+#endif
+#define ACTION_TIMES 500U
+#define STIMES (10U * 1000U / ACTION_TIMES)
 #define CURRENT_UPPER 16.0F
 #define CURRENT_LOWER 4.0F
 #define Get_Target(__current, __upper, __lower) \
   (((__current)-CURRENT_LOWER) / CURRENT_UPPER * ((__upper) - (__lower)) + (__lower))
 #define Set_SoftTimer_Flag(__obj, __val) \
   ((__obj)->flag = (__val))
-#define Sure_Overtimes(__obj, __times) \
-  ((__obj)->flag ? (++(__obj)->counts >= (__times) ? (__obj)->counts = 0U, (__obj)->flag = false, true : false) : false)
+#define Sure_Overtimes(__obj, __times)                                     \
+  ((__obj)->flag ? (++(__obj)->counts >= (__times) ? (__obj)->counts = 0U, \
+                    (__obj)->flag = false, true : false)                   \
+                 : false)
 #define Clear_Counter(__obj) ((__obj)->counts = 0U)
 #define Open_Vx(__x) ((__x) <= VX_SIZE ? wbit[__x - 1U] = true : false)
 #define Close_Vx(__x) ((__x) <= VX_SIZE ? wbit[__x - 1U] = false : false)
   mdBit sbit = mdLow, mode = mdLow;
   // mdU32 addr;
   mdSTATUS ret = mdFALSE;
+#if defined(USING_LYNCH)
+  static mdBit wbit[] = {false, false, false, false, false, false};
+#else
   static mdBit wbit[] = {false, false, false, false, false};
+#endif
   static Soft_Timer_HandleTypeDef timer[] = {
       {.counts = 0, .flag = false},
       {.counts = 0, .flag = false},
@@ -584,7 +595,13 @@ void Contrl_Task(void const *argument)
 #define ERROR_CHECK
       {
         if (!error_code)
-          error_code = *p <= 0.0F ? (3U * site + ERROR_BASE_CODE) : (*p < CURRENT_LOWER ? (3U * site + ERROR_BASE_CODE + 1U) : (*p > (CURRENT_LOWER + CURRENT_UPPER + 1.0F) ? (3U * site + ERROR_BASE_CODE + 2U) : 0));
+          error_code = *p <= 0.0F
+                           ? (3U * site + ERROR_BASE_CODE)
+                           : (*p < (CURRENT_LOWER - 0.5F) /*断线�??测偏�??0.5ma*/
+                                  ? (3U * site + ERROR_BASE_CODE + 1U)
+                                  : (*p > (CURRENT_LOWER + CURRENT_UPPER + 1.0F)
+                                         ? (3U * site + ERROR_BASE_CODE + 2U)
+                                         : 0));
       }
       /*Convert analog signal into physical quantity*/
       *p = Get_Target(*p, *pu, *(pu + 1U));
@@ -594,6 +611,11 @@ void Contrl_Task(void const *argument)
       // shellPrint(Shell_Object, "max = %.3f,min = %.3f, C_Value[0x%p] = %.3fMpa/M3\r\n", *pu, *(pu + 1U), p, *p);
 #endif
     }
+#if !defined(USING_B3)
+    /*Shield vaporizer outlet pressure failure*/
+    if ((error_code == 0x08) || (error_code == 0x09))
+      error_code = 0;
+#endif
     ps->Param.Error_Code = error_code;
     taskEXIT_CRITICAL();
     xQueueSend(UserQueueHandle, &usinfo, 10);
@@ -634,13 +656,19 @@ void Contrl_Task(void const *argument)
     }
     /*Safe operation guarantee*/
 #define SAFETY
-    { /*V1在开始�?�停机模式只有打�???，没有关闭！！！*/
-      if ((ps->User.Ptank <= ps->Param.Ptank_limit) || (ps->User.Ltank <= ps->Param.Ltank_limit) || (ps->Param.Error_Code))
+    { /*V1在开始�?�停机模式只有打�?????，没有关闭！！！*/
+      if ((ps->User.Ptank <= ps->Param.Ptank_limit) ||
+          (ps->User.Ltank <= ps->Param.Ltank_limit) || (ps->Param.Error_Code))
       {
+#if defined(USING_LYNCH)
+        /*close V1、V2、V3, open V6*/
+        Close_Vx(1U), Close_Vx(2U), Close_Vx(3U), Close_Vx(4U), Close_Vx(5U), Open_Vx(6U);
+#else
         /*close V1、V2、V3*/
         Close_Vx(1U), Close_Vx(2U), Close_Vx(3U), Close_Vx(4U), Close_Vx(5U);
+#endif
 #if defined(USING_DEBUG_APPLICATION)
-        shellPrint(Shell_Object, "SAF: close V1 V2 V3\r\n");
+        shellPrint(Shell_Object, "SAF: close V1 V2 V3; open V6\r\n");
 #endif
         goto __no_action;
       }
@@ -668,12 +696,18 @@ void Contrl_Task(void const *argument)
         if (ps->User.Ptank >= ps->Param.PSspf_start)
         { /*open counter*/
           // Set_SoftTimer_Flag(&timer[0U], true);
-          /*openV1、openV2、V3*/
+
+#if defined(USING_LYNCH)
+          /*close V1、V6;open V2、V3*/
+          Close_Vx(1U), Open_Vx(2U), Open_Vx(3U), Close_Vx(6U);
+#else
+          /*close V1、open V2、V3*/
           Close_Vx(1U), Open_Vx(2U), Open_Vx(3U);
+#endif
           /*set flag*/
           mutex_flag = true;
 #if defined(USING_DEBUG_APPLICATION)
-          shellPrint(Shell_Object, "A1: open V1 open V2 V3\r\n");
+          shellPrint(Shell_Object, "A1: close V1 V6; open V2 V3\r\n");
 #endif
           goto __no_action;
         }
@@ -830,104 +864,108 @@ void Contrl_Task(void const *argument)
 #endif
     }
   __exit:
-    osDelay(1000);
+    osDelay(ACTION_TIMES);
   }
   /* USER CODE END Contrl_Task */
 }
 
-/* Report function */
-void Report(void const *argument)
+/* USER CODE BEGIN Header_Report_Task */
+/**
+ * @brief Function implementing the Report thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_Report_Task */
+void Report_Task(void const *argument)
 {
-  /* USER CODE BEGIN Report */
-  mdU16 rbit = mdLow, wbit = mdLow;
-  uint8_t bit = 0;
-  // mdSTATUS ret = mdFALSE;
-  uint16_t value = 0x0000;
-  static bool first_flag = false;
-  Save_HandleTypeDef *ps = &Save_Flash;
-  Save_User urinfo;
+  /* USER CODE BEGIN Report_Task */
+  /* Infinite loop */
+  for (;;)
+  {
+    mdU16 buf[] = {0, 0};
+    uint8_t bit = 0;
+    static bool first_flag = false;
+    Save_HandleTypeDef *ps = &Save_Flash;
+    Save_User urinfo;
+    uint16_t size = sizeof(buf) + sizeof(urinfo) + (sizeof(float) * ADC_DMA_CHANNEL);
 #if defined(USING_FREERTOS)
-  float *pdata = (float *)CUSTOM_MALLOC(sizeof(float) * ADC_DMA_CHANNEL);
-  if (!pdata)
-    goto __exit;
+    uint8_t data[sizeof(buf) + sizeof(urinfo) + (sizeof(float) * ADC_DMA_CHANNEL)], *pdata = data;
+    // uint8_t *pdata = (uint8_t *)CUSTOM_MALLOC(size);
+    // if (!pdata)
+    //   goto __exit;
 #else
-  float pdata[ADC_DMA_CHANNEL];
+    float pdata[ADC_DMA_CHANNEL];
 #endif
-  memset(pdata, 0x00, sizeof(float) * ADC_DMA_CHANNEL);
+    memset(pdata, 0x00, size);
+    memset(buf, 0x00, sizeof(buf));
+    for (uint16_t i = 0; i < EXTERN_DIGITALIN_MAX; i++)
+    {
+      mdRTU_ReadInputCoil(Slave1_Object, INPUT_DIGITAL_START_ADDR + i, bit);
+      buf[0] |= bit << (i + 8U);
+      mdRTU_ReadCoil(Slave1_Object, OUT_DIGITAL_START_ADDR + i, bit);
+      buf[1] |= bit << (i + 8U);
+    }
+    /*Read 4G module status*/
+    buf[0] |= Read_LTE_State();
+    memcpy(pdata, buf, sizeof(buf));
+#if defined(USING_DEBUG)
+    // shellPrint(Shell_Object, "rbit = 0x%02x.\r\n", rbit);
+#endif
+    xQueueReceive(UserQueueHandle, (void *)&urinfo, 100);
+    for (float *puser = &urinfo.Ptank; puser < &urinfo.Ptank + BX_SIZE; puser++)
+    {
+#if defined(USING_DEBUG)
+      // shellPrint(Shell_Object, "Value[%d] = %.3fMpa/M3\r\n", i, temp_data[i]);
+#endif
+      Endian_Swap((uint8_t *)puser, 0U, sizeof(float));
+    }
+    memcpy(&pdata[sizeof(buf)], &urinfo, sizeof(urinfo));
+    /*Analog input*/
+    mdRTU_ReadInputRegisters(Slave1_Object, INPUT_ANALOG_START_ADDR, ADC_DMA_CHANNEL * 2U,
+                             (mdU16 *)&pdata[sizeof(buf) + sizeof(urinfo)]);
+    for (uint8_t i = 0; i < ADC_DMA_CHANNEL; i++)
+    {
+      Endian_Swap((uint8_t *)&pdata[sizeof(buf) + sizeof(urinfo) + i * sizeof(float)], 0U, sizeof(float));
+    }
+    Dwin_Object->Dw_Write(Dwin_Object, DIGITAL_INPUT_ADDR, (uint8_t *)pdata, size);
+    osDelay(5);
 
-  for (uint16_t i = 0; i < EXTERN_DIGITALIN_MAX; i++)
-  {
-    mdRTU_ReadInputCoil(Slave1_Object, INPUT_DIGITAL_START_ADDR + i, bit);
-    rbit |= bit << (i + 8U);
-    mdRTU_ReadCoil(Slave1_Object, OUT_DIGITAL_START_ADDR + i, bit);
-    wbit |= bit << (i + 8U);
-  }
-  /*Read 4G module status*/
-  rbit |= Read_LTE_State();
-#if defined(USING_DEBUG)
-  // shellPrint(Shell_Object, "rbit = 0x%02x.\r\n", rbit);
-#endif
-  /*Digital input*/
-  Dwin_Object->Dw_Write(Dwin_Object, DIGITAL_INPUT_ADDR, (uint8_t *)&rbit, sizeof(rbit));
-  osDelay(5);
-  /*Digital output*/
-  Dwin_Object->Dw_Write(Dwin_Object, DIGITAL_OUTPUT_ADDR, (uint8_t *)&wbit, sizeof(wbit));
-  osDelay(5);
-  xQueueReceive(UserQueueHandle, (void *)&urinfo, osWaitForever);
-  for (float *puser = &urinfo.Ptank; puser < &urinfo.Ptank + BX_SIZE; puser++)
-  {
-#if defined(USING_DEBUG)
-    // shellPrint(Shell_Object, "Value[%d] = %.3fMpa/M3\r\n", i, temp_data[i]);
-#endif
-    Endian_Swap((uint8_t *)puser, 0U, sizeof(float));
-  }
-  Dwin_Object->Dw_Write(Dwin_Object, PRESSURE_OUT_ADDR, (uint8_t *)&urinfo, BX_SIZE * sizeof(float));
-  osDelay(5);
-  /*Analog input*/
-  mdRTU_ReadInputRegisters(Slave1_Object, INPUT_ANALOG_START_ADDR, ADC_DMA_CHANNEL * 2U, (mdU16 *)pdata);
-  for (uint8_t i = 0; i < ADC_DMA_CHANNEL; i++)
-  {
-    Endian_Swap((uint8_t *)&pdata[i], 0U, sizeof(float));
-  }
-  Dwin_Object->Dw_Write(Dwin_Object, ANALOG_INPUT_ADDR, (uint8_t *)pdata, ADC_DMA_CHANNEL * sizeof(float));
-  osDelay(5);
-  /*Analog output*/
-  mdRTU_ReadHoldRegisters(Slave1_Object, OUT_ANALOG_START_ADDR, EXTERN_ANALOGOUT_MAX * 2U, (mdU16 *)pdata);
-  for (uint8_t i = 0; i < EXTERN_ANALOGOUT_MAX; i++)
-  {
-    Endian_Swap((uint8_t *)&pdata[i], 0U, sizeof(float));
-  }
-  Dwin_Object->Dw_Write(Dwin_Object, ANALOG_OUTPUT_ADDR, (uint8_t *)pdata, EXTERN_ANALOGOUT_MAX * sizeof(float));
-  osDelay(5);
-  /*Report error code*/
-  if (ps->Param.Error_Code)
-  {
+    /*Analog output*/
+    mdRTU_ReadHoldRegisters(Slave1_Object, OUT_ANALOG_START_ADDR, EXTERN_ANALOGOUT_MAX * 2U, (mdU16 *)pdata);
+    for (uint8_t i = 0; i < EXTERN_ANALOGOUT_MAX; i++)
+    {
+      Endian_Swap((uint8_t *)&pdata[i * sizeof(float)], 0U, sizeof(float));
+    }
+    Dwin_Object->Dw_Write(Dwin_Object, ANALOG_OUTPUT_ADDR, (uint8_t *)pdata, EXTERN_ANALOGOUT_MAX * sizeof(float));
+    osDelay(5);
+    /*Report error code*/
+    if (ps->Param.Error_Code)
+    {
 #define ERROR_PAGE 0x0E
 #define MAIN_PAGE 0x03
-    value = (uint16_t)ps->Param.Error_Code;
-    value = (value >> 8U) | (value << 8U);
-    Dwin_Object->Dw_Write(Dwin_Object, ERROR_CODE_ADDR, (uint8_t *)&value, sizeof(value));
-    value = 0x0100;
-    osDelay(5);
-    Dwin_Object->Dw_Page(Dwin_Object, ERROR_PAGE);
-    osDelay(5);
-    /*Open error animation*/
-    Dwin_Object->Dw_Write(Dwin_Object, ERROR_ANMATION, (uint8_t *)&value, sizeof(value));
-    first_flag = false;
-  }
-  else
-  {
-    if (!first_flag)
-    {
-      first_flag = true;
-      Dwin_Object->Dw_Page(Dwin_Object, MAIN_PAGE);
+      buf[0] = (uint16_t)ps->Param.Error_Code;
+      buf[0] = (buf[0] >> 8U) | (buf[0] << 8U);
+      buf[1] = 0x0100;
+      Dwin_Object->Dw_Write(Dwin_Object, ERROR_CODE_ADDR, (uint8_t *)buf, sizeof(buf));
+      osDelay(5);
+      Dwin_Object->Dw_Page(Dwin_Object, ERROR_PAGE);
+      first_flag = false;
     }
-  }
+    else
+    {
+      if (!first_flag)
+      {
+        first_flag = true;
+        Dwin_Object->Dw_Page(Dwin_Object, MAIN_PAGE);
+      }
+    }
 #if defined(USING_FREERTOS)
-__exit:
-  CUSTOM_FREE(pdata);
+    // __exit:
+    //   CUSTOM_FREE(pdata);
 #endif
-  /* USER CODE END Report */
+    osDelay(REPORT_TIMES);
+  }
+  /* USER CODE END Report_Task */
 }
 
 /* MdTimer function */
@@ -944,7 +982,7 @@ void MdTimer(void const *argument)
   {
     return;
   }
-  /*考虑加互斥锁：在update�????????46指令*/
+  /*考虑加互斥锁：在update�??????????46指令*/
   // mdRTU_46H(pMd->slaveId, 0x00, 0x00, 0x00, NULL);
   //  pMd->mdRTU_46H(pMd, 0x00, 0x00, 0x00, NULL);
 

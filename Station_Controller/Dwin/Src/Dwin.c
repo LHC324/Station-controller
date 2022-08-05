@@ -419,8 +419,10 @@ static void Dwin_EventHandle(pDwinHandle pd, uint8_t *pSite)
  */
 static void Dwin_ErrorHandle(pDwinHandle pd, uint8_t error_code, uint8_t site)
 {
-	TYPEDEF_STRUCT tdata = (error_code == BELOW_LOWER_LIMIT) ? pd->Slave.pMap[site].lower : pd->Slave.pMap[site].upper;
 #if defined(USING_DEBUG)
+	TYPEDEF_STRUCT tdata = (error_code == BELOW_LOWER_LIMIT)
+							   ? pd->Slave.pMap[site].lower
+							   : pd->Slave.pMap[site].upper;
 	/*同时可切换到目标提示界面*/
 	if (error_code == BELOW_LOWER_LIMIT)
 	{
