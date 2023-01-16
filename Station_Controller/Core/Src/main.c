@@ -50,8 +50,8 @@ Save_Param Save_InitPara = {
     .Pgas_soutlet_min = 0.0F,
     .Ltank_max = 50.0F,
     .Ltank_min = 0.0F,
-    .Ptoler_upper = 0.5F,
-    .Ptoler_lower = 0.1F,
+    .Ptoler_upper = 1.2F,
+    .Ptoler_lower = 0.66F,
     .Ltoler_upper = 2.0F,
     .Ltoler_lower = 0.5F,
     .PSspf_start = 2.0F,
@@ -112,26 +112,7 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-/**
- * @brief	后台设置参数写会modbus保持寄存�???
- * @details
- * @param	ps 指向第一个后台参数地�???
- * @retval	None
- */
-void Param_WriteBack(Save_HandleTypeDef *ps)
-{
-  ps->Param.System_Flag = (*(__IO uint32_t *)UPDATE_SAVE_ADDRESS);
-  ps->Param.System_Version = SYSTEM_VERSION();
-  /*Parameters are written to the mdbus hold register*/
-  mdSTATUS ret = mdRTU_WriteHoldRegs(Slave1_Object, PARAM_MD_ADDR, GET_PARAM_SITE(Save_Param, Adc, uint16_t),
-                                     (mdU16 *)&ps->Param);
-  if (ret == mdFALSE)
-  {
-#if defined(USING_DEBUG)
-    shellPrint(Shell_Object, "Parameter write to hold register failed!\r\n");
-#endif
-  }
-}
+
 /* USER CODE END 0 */
 
 /**
@@ -207,7 +188,7 @@ int main(void)
     /*DMA buffer must point to an entity address!!!*/
     HAL_UART_Receive_DMA(&huart3, mdRTU_Recive_Buf(Slave1_Object), MODBUS_PDU_SIZE_MAX);
     /*Parameters are written to the mdbus hold register*/
-    Param_WriteBack(ps);
+    // Param_WriteBack(ps);
   }
 #if !defined(USING_SHELL)
   if (Slave2_Object)

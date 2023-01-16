@@ -43,8 +43,8 @@ DwinMap Dwin_ObjMap[] = {
 	{.addr = PGAS_MIN_ADDR, .upper = 4.0F, .lower = 0, .event = Dwin_EventHandle},
 	{.addr = LTANK_MAX_ADDR, .upper = 50.0F, .lower = 0, .event = Dwin_EventHandle},
 	{.addr = LTANK_MIN_ADDR, .upper = 50.0F, .lower = 0, .event = Dwin_EventHandle},
-	{.addr = PTOLE_MAX_ADDR, .upper = 0.5F, .lower = 0, .event = Dwin_EventHandle},
-	{.addr = PTOLE_MIN_ADDR, .upper = 0.5F, .lower = 0, .event = Dwin_EventHandle},
+	{.addr = PTOLE_MAX_ADDR, .upper = 10.0F, .lower = 0, .event = Dwin_EventHandle},
+	{.addr = PTOLE_MIN_ADDR, .upper = 10.0F, .lower = 0, .event = Dwin_EventHandle},
 	{.addr = LEVEL_MAX_ADDR, .upper = 2.0F, .lower = 0, .event = Dwin_EventHandle},
 	{.addr = LEVEL_MIN_ADDR, .upper = 2.0F, .lower = 0, .event = Dwin_EventHandle},
 	{.addr = SPSFS_MAX_ADDR, .upper = 4.0F, .lower = 0, .event = Dwin_EventHandle},
@@ -380,16 +380,16 @@ static void Dwin_EventHandle(pDwinHandle pd, uint8_t *pSite)
 #endif
 		// Endian_Swap((uint8_t *)&data, 0U, sizeof(TYPEDEF_STRUCT));
 		/*数据写回保持寄存器区*/
-		mdSTATUS ret = mdRTU_WriteHoldRegs(Slave1_Object, PARAM_MD_ADDR + (*pSite) * 2U, 2U, (mdU16 *)&data);
-		if (ret == mdFALSE)
-		{
-#if defined(USING_DEBUG)
-			shellPrint(Shell_Object, "Holding register addr[0x%x], Write: %.3f failed!\r\n", PARAM_MD_ADDR + (*pSite) * 2U, data);
-#endif
-		}
-		// Endian_Swap((uint8_t *)&data, 0U, sizeof(TYPEDEF_STRUCT));
-		// /*确认数据回传到屏幕*/
-		// pd->Dw_Write(pd, pd->Slave.pMap[*pSite].addr, (uint8_t *)&data, sizeof(TYPEDEF_STRUCT));
+// 		mdSTATUS ret = mdRTU_WriteHoldRegs(Slave1_Object, PARAM_MD_ADDR + (*pSite) * 2U, 2U, (mdU16 *)&data);
+// 		if (ret == mdFALSE)
+// 		{
+// #if defined(USING_DEBUG)
+// 			shellPrint(Shell_Object, "Holding register addr[0x%x], Write: %.3f failed!\r\n", PARAM_MD_ADDR + (*pSite) * 2U, data);
+// #endif
+// 		}
+// Endian_Swap((uint8_t *)&data, 0U, sizeof(TYPEDEF_STRUCT));
+// /*确认数据回传到屏幕*/
+// pd->Dw_Write(pd, pd->Slave.pMap[*pSite].addr, (uint8_t *)&data, sizeof(TYPEDEF_STRUCT));
 #if defined(USING_DEBUG)
 		shellPrint(Shell_Object, "pdata[%d] = %.3f,Ptank_max = %.3f.\r\n", *pSite, pdata[*pSite], ps->Param.Ptank_max);
 #endif

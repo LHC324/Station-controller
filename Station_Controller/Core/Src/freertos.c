@@ -166,6 +166,27 @@ bool Exit_Shell(void)
 #if defined(USING_DEBUG)
 SHELL_EXPORT_CMD(SHELL_CMD_PERMISSION(0) | SHELL_CMD_TYPE(SHELL_TYPE_CMD_FUNC), exit_shell, Exit_Shell, exit);
 #endif
+
+/**
+ * @brief	Background parameters are written back to modbus registers
+ * @details
+ * @param	ps Points to the address of the first background parameter
+ * @retval	None
+ */
+void Param_WriteBack(Save_HandleTypeDef *ps)
+{
+  ps->Param.System_Flag = (*(__IO uint32_t *)UPDATE_SAVE_ADDRESS);
+  ps->Param.System_Version = SYSTEM_VERSION();
+  /*Parameters are written to the mdbus hold register*/
+  mdSTATUS ret = mdRTU_WriteHoldRegs(Slave1_Object, PARAM_MD_ADDR, GET_PARAM_SITE(Save_Param, Adc, uint16_t),
+                                     (mdU16 *)&ps->Param);
+  if (ret == mdFALSE)
+  {
+#if defined(USING_DEBUG)
+    shellPrint(Shell_Object, "Parameter write to hold register failed!\r\n");
+#endif
+  }
+}
 /* USER CODE END FunctionPrototypes */
 
 void Shell_Task(void const *argument);
@@ -299,7 +320,7 @@ void MX_FREERTOS_Init(void)
 
   /* Create the thread(s) */
   /* definition and creation of Shell */
-  osThreadDef(Shell, Shell_Task, osPriorityLow, 0, 256);
+  osThreadDef(Shell, Shell_Task, osPriorityLow, 0, 1024);
   ShellHandle = osThreadCreate(osThread(Shell), (void *)&shell);
 
   /* definition and creation of Input */
@@ -323,7 +344,7 @@ void MX_FREERTOS_Init(void)
   RS485Handle = osThreadCreate(osThread(RS485), NULL);
 
   /* definition and creation of Contrl */
-  osThreadDef(Contrl, Contrl_Task, osPriorityHigh, 0, 256);
+  osThreadDef(Contrl, Contrl_Task, osPriorityHigh, 0, 1024);
   ContrlHandle = osThreadCreate(osThread(Contrl), NULL);
 
   /* definition and creation of Report */
@@ -526,7 +547,8 @@ void RS485_Task(void const *argument)
 /* USER CODE END Header_Contrl_Task */
 void Contrl_Task(void const *argument)
 {
-  /* USER CODE BEGIN Contrl_Task */
+/* USER CODE BEGIN Contrl_Task */
+#define PI 3.2415926F
 #define OFFSET 4U
 #define BX_SIZE 4U
 #if defined(USING_LYNCH)
@@ -534,12 +556,15 @@ void Contrl_Task(void const *argument)
 #else
 #define VX_SIZE 5U
 #endif
-#define ACTION_TIMES 500U
+#define ACTION_TIMES 1000U
+#define ACTION_DELAY_TIMES (ACTION_TIMES * 5U)
 #define STIMES (10U * 1000U / ACTION_TIMES)
 #define CURRENT_UPPER 16.0F
 #define CURRENT_LOWER 4.0F
 #define Get_Target(__current, __upper, __lower) \
   (((__current)-CURRENT_LOWER) / CURRENT_UPPER * ((__upper) - (__lower)) + (__lower))
+#define Get_Tank_Level(__R, __L, __H) \
+  (PI * ((__R) * (__R) * (__L) + (__H) * (__H) * (__H) / 96.0F))
 #define Set_SoftTimer_Flag(__obj, __val) \
   ((__obj)->flag = (__val))
 #define Sure_Overtimes(__obj, __times)                                     \
@@ -564,12 +589,15 @@ void Contrl_Task(void const *argument)
   Save_HandleTypeDef *ps = &Save_Flash;
   Save_User usinfo;
   static bool mutex_flag = false;
+  uint32_t next_times = 0;
 
   /* Infinite loop */
   for (;;)
   {
-    uint16_t error_code = 0;
+    uint32_t error_code = 0;
     // goto __no_action;
+
+    next_times = ACTION_TIMES;
     // memset((void *)&pas->User, 0x00, BX_SIZE * 2U);
     memset((void *)&ps->User, 0x00, BX_SIZE * 2U);
     // ret = mdRTU_ReadInputRegisters(Slave1_Object, INPUT_ANALOG_START_ADDR, BX_SIZE * 2U, (mdU16 *)&pas->User);
@@ -594,17 +622,18 @@ void Contrl_Task(void const *argument)
       /*User sensor access error check*/
 #define ERROR_CHECK
       {
-        if (!error_code)
-          error_code = *p <= 0.0F
+        if (!error_code && (site != 0x02))
+          error_code = *p <= 0.5F
                            ? (3U * site + ERROR_BASE_CODE)
-                           : (*p < (CURRENT_LOWER - 0.5F) /*断线�??测偏�??0.5ma*/
+                           : (*p < (CURRENT_LOWER - 0.5F) /*Disconnection detection offset 0.5mA*/
                                   ? (3U * site + ERROR_BASE_CODE + 1U)
                                   : (*p > (CURRENT_LOWER + CURRENT_UPPER + 1.0F)
                                          ? (3U * site + ERROR_BASE_CODE + 2U)
                                          : 0));
       }
       /*Convert analog signal into physical quantity*/
-      *p = Get_Target(*p, *pu, *(pu + 1U));
+      *p = (0x03 & site) ? Get_Tank_Level(ps->Param.Ptoler_upper, Get_Target(*p, *pu, *(pu + 1U)), ps->Param.Ptoler_lower)
+                         : Get_Target(*p, *pu, *(pu + 1U)); // Calculate the current liquid level volume of vertical storage tank
       *p = *p <= 0.0F ? 0 : *p;
       *pinfo = *p;
 #if defined(USING_DEBUG)
@@ -767,6 +796,7 @@ void Contrl_Task(void const *argument)
           // Set_SoftTimer_Flag(&timer[1U], true);
           /*close V3*/
           Close_Vx(3U), Close_Vx(1U), Open_Vx(2U);
+          next_times = ACTION_DELAY_TIMES; // 解决气相阀打开时间太短导致的震荡
 #if defined(USING_DEBUG_APPLICATION)
           shellPrint(Shell_Object, "B1C1: close V3 close V1 open V2\r\n");
 #endif
@@ -788,6 +818,7 @@ void Contrl_Task(void const *argument)
         {
           /*open V2*/
           Open_Vx(2U);
+          next_times = ACTION_DELAY_TIMES; // 解决气相阀打开时间太短导致的震荡
 #if defined(USING_DEBUG_APPLICATION)
           shellPrint(Shell_Object, "A2: open V2\r\n");
 #endif
@@ -864,7 +895,7 @@ void Contrl_Task(void const *argument)
 #endif
     }
   __exit:
-    osDelay(ACTION_TIMES);
+    osDelay(next_times);
   }
   /* USER CODE END Contrl_Task */
 }
@@ -879,23 +910,23 @@ void Contrl_Task(void const *argument)
 void Report_Task(void const *argument)
 {
   /* USER CODE BEGIN Report_Task */
+  mdU16 buf[] = {0, 0};
+  uint8_t bit = 0;
+  static bool first_flag = false;
+  Save_HandleTypeDef *ps = &Save_Flash;
+  Save_User urinfo;
+  uint16_t size = sizeof(buf) + sizeof(urinfo) + (sizeof(float) * ADC_DMA_CHANNEL);
+#if defined(USING_FREERTOS)
+  uint8_t data[sizeof(buf) + sizeof(urinfo) + (sizeof(float) * ADC_DMA_CHANNEL)], *pdata = data;
+  // uint8_t *pdata = (uint8_t *)CUSTOM_MALLOC(size);
+  // if (!pdata)
+  //   goto __exit;
+#else
+  float pdata[ADC_DMA_CHANNEL];
+#endif
   /* Infinite loop */
   for (;;)
   {
-    mdU16 buf[] = {0, 0};
-    uint8_t bit = 0;
-    static bool first_flag = false;
-    Save_HandleTypeDef *ps = &Save_Flash;
-    Save_User urinfo;
-    uint16_t size = sizeof(buf) + sizeof(urinfo) + (sizeof(float) * ADC_DMA_CHANNEL);
-#if defined(USING_FREERTOS)
-    uint8_t data[sizeof(buf) + sizeof(urinfo) + (sizeof(float) * ADC_DMA_CHANNEL)], *pdata = data;
-    // uint8_t *pdata = (uint8_t *)CUSTOM_MALLOC(size);
-    // if (!pdata)
-    //   goto __exit;
-#else
-    float pdata[ADC_DMA_CHANNEL];
-#endif
     memset(pdata, 0x00, size);
     memset(buf, 0x00, sizeof(buf));
     for (uint16_t i = 0; i < EXTERN_DIGITALIN_MAX; i++)
@@ -911,15 +942,19 @@ void Report_Task(void const *argument)
 #if defined(USING_DEBUG)
     // shellPrint(Shell_Object, "rbit = 0x%02x.\r\n", rbit);
 #endif
-    xQueueReceive(UserQueueHandle, (void *)&urinfo, 100);
-    for (float *puser = &urinfo.Ptank; puser < &urinfo.Ptank + BX_SIZE; puser++)
+    BaseType_t ret = xQueueReceive(UserQueueHandle, (void *)&urinfo, 10);
+    if (ret == pdPASS) // 使用有效的用户数据
     {
+      for (float *puser = &urinfo.Ptank; puser < &urinfo.Ptank + BX_SIZE; puser++)
+      {
 #if defined(USING_DEBUG)
-      // shellPrint(Shell_Object, "Value[%d] = %.3fMpa/M3\r\n", i, temp_data[i]);
+        // shellPrint(Shell_Object, "Value[%d] = %.3fMpa/M3\r\n", i, temp_data[i]);
 #endif
-      Endian_Swap((uint8_t *)puser, 0U, sizeof(float));
+        Endian_Swap((uint8_t *)puser, 0U, sizeof(float));
+      }
     }
     memcpy(&pdata[sizeof(buf)], &urinfo, sizeof(urinfo));
+
     /*Analog input*/
     mdRTU_ReadInputRegisters(Slave1_Object, INPUT_ANALOG_START_ADDR, ADC_DMA_CHANNEL * 2U,
                              (mdU16 *)&pdata[sizeof(buf) + sizeof(urinfo)]);
@@ -959,6 +994,9 @@ void Report_Task(void const *argument)
         Dwin_Object->Dw_Page(Dwin_Object, MAIN_PAGE);
       }
     }
+    /*Parameter write back to holding register*/
+    // extern void Param_WriteBack(Save_HandleTypeDef * ps);
+    Param_WriteBack(ps);
 #if defined(USING_FREERTOS)
     // __exit:
     //   CUSTOM_FREE(pdata);
