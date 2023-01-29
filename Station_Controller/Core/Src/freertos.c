@@ -632,8 +632,8 @@ void Contrl_Task(void const *argument)
                                          : 0));
       }
       /*Convert analog signal into physical quantity*/
-      *p = (0x03 & site) ? Get_Tank_Level(ps->Param.Ptoler_upper, Get_Target(*p, *pu, *(pu + 1U)), ps->Param.Ptoler_lower)
-                         : Get_Target(*p, *pu, *(pu + 1U)); // Calculate the current liquid level volume of vertical storage tank
+      *p = (0x03 == site) ? Get_Tank_Level(ps->Param.Ptoler_upper, Get_Target(*p, *pu, *(pu + 1U)), ps->Param.Ptoler_lower)
+                          : Get_Target(*p, *pu, *(pu + 1U)); // Calculate the current liquid level volume of vertical storage tank
       *p = *p <= 0.0F ? 0 : *p;
       *pinfo = *p;
 #if defined(USING_DEBUG)
